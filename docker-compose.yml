@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: prod_dashboard_db
+    restart: always
+    environment:
+      POSTGRES_DB: production_dashboard
+      POSTGRES_USER: dashboard_user
+      POSTGRES_PASSWORD: dashboard_pass_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/config/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Node.js Backend + Socket.IO
+  backend:
+    build: ./backend
+    container_name: prod_dashboard_backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: production_dashboard
+      DB_USER: dashboard_user
+      DB_PASSWORD: dashboard_pass_2024
+      PORT: 3001
+    depends_on:
+      - db
+
+  # React Frontend
+  frontend:
+    build: ./frontend
+    container_name: prod_dashboard_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

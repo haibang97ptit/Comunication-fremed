@@ -1,8 +1,8 @@
-# 🏭 Production Dashboard - Thông Tin Sản Xuất
+#  Production Dashboard - Thông Tin Sản Xuất
 
 Dashboard real-time hiển thị thông tin sản xuất, truyền tín hiệu giữa các bộ phận.
 
-## 📦 Cấu trúc project
+##  Cấu trúc project
 
 ```
 production-dashboard/
@@ -26,7 +26,7 @@ production-dashboard/
 └── README.md
 ```
 
-## 🚀 Cách 1: Chạy bằng Docker (Khuyến nghị)
+##  Cách 1: Chạy bằng Docker (Khuyến nghị)
 
 ```bash
 # Clone/copy project vào máy
@@ -40,7 +40,7 @@ docker-compose up --build
 # API:        http://localhost:3001/api/dashboard
 ```
 
-## 💻 Cách 2: Chạy thủ công trên Windows (không Docker)
+##  Cách 2: Chạy thủ công trên Windows (không Docker)
 
 ### Bước 1: Cài PostgreSQL
 - Tải PostgreSQL từ https://www.postgresql.org/download/windows/
@@ -65,7 +65,7 @@ npm start
 ```
 → Dashboard mở tại http://localhost:3000
 
-## 🔧 Cấu hình
+##  Cấu hình
 
 ### Biến môi trường Backend
 | Biến | Mặc định | Mô tả |
@@ -83,7 +83,7 @@ npm start
 | REACT_APP_SOCKET_URL | http://localhost:3001 | WebSocket URL |
 | REACT_APP_API_URL | http://localhost:3001/api | API URL |
 
-## 📡 API Endpoints
+##  API Endpoints
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
@@ -100,7 +100,7 @@ npm start
 | POST | /api/problems | Báo cáo sự cố mới |
 | PUT | /api/problems/:id/resolve | Đánh dấu đã xử lý |
 
-## 🔌 WebSocket Events
+##  WebSocket Events
 
 | Event | Hướng | Mô tả |
 |-------|-------|-------|
@@ -112,7 +112,7 @@ npm start
 | problem-resolved | Server → Client | Sự cố đã xử lý |
 | submit-problem | Client → Server | Gửi sự cố mới |
 
-## 🖥️ Dashboard Features
+##  Dashboard Features
 - **2 slide tự chuyển mỗi 15 giây**
   - Slide 1: Daily KPI + Tin tốt + Ngôi sao tháng + Thông báo
   - Slide 2: Kế hoạch sản xuất + Phân ca + New Problem

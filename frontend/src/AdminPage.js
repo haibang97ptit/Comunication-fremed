@@ -52,7 +52,7 @@ export default function AdminPage({role}){
   const[coa,setCoa]=useState([]);
   const[planForm,setPlanForm]=useState({image_url:null,notes:''});
   const[shiftForm,setShiftForm]=useState({image_url:null,notes:''});
-  const[qualityCal,setQualityCal]=useState([]);
+  const[kpiCal,setKpiCal]=useState([]);
 
   // Forms
   const[newGoodNews,setNewGoodNews]=useState('');
@@ -80,7 +80,7 @@ export default function AdminPage({role}){
       if(d.shiftSchedule)setShiftForm({image_url:d.shiftSchedule.image_url,notes:d.shiftSchedule.notes||''});
       if(d.monthlyStar)setStarForm({employee_name:d.monthlyStar.employee_name||'',employee_image:d.monthlyStar.employee_image,content:d.monthlyStar.content||''});
       (d.kpi||[]).forEach(k=>setKpiForms(p=>({...p,[k.kpi_type]:{image_url:k.image_url}})));
-      if(d.kpiCalendar) setQualityCal(d.kpiCalendar.filter(x=>x.kpi_type==='quality'));
+      if(d.kpiCalendar) setKpiCal(d.kpiCalendar);
     }).catch(console.error);
   },[authed]);
 
@@ -97,18 +97,17 @@ export default function AdminPage({role}){
   const submitProblem=async()=>{if(!probForm.department||!probForm.description)return;const p=await post('/problems',{...probForm,reported_by:role.toUpperCase()});setProblems(prev=>[p,...prev]);setProbForm({department:'',description:'',severity:'info'});show('Đã báo cáo sự cố')};
   const resolveProblem=async(id)=>{await put(`/problems/${id}/resolve`);setProblems(p=>p.filter(x=>x.id!==id));show('Đã xử lý sự cố')};
   const submitKpi=async(type)=>{await put(`/kpi/${type}`,{image_url:kpiForms[type].image_url,updated_by:role.toUpperCase()});show(`Đã cập nhật ${type.toUpperCase()}`)};
-  const toggleQualityCal=async(day,shift,currentPassed)=>{
+  const toggleKpiCal=async(kpiType,day,shift,currentPassed)=>{
     const now=new Date();const m=now.getMonth()+1;const y=now.getFullYear();
-    // Cycle: null → true (đạt) → false (không đạt) → null (xóa/reset)
     let newVal;
     if(currentPassed===undefined||currentPassed===null) newVal=true;
     else if(currentPassed===true) newVal=false;
     else newVal=null;
-    const r=await put('/kpi-calendar/quality',{day,shift,passed:newVal,month:m,year:y,updated_by:role.toUpperCase()});
-    setQualityCal(prev=>{
-      const exists=prev.find(x=>x.day===day&&x.shift===shift);
-      if(exists) return prev.map(x=>x.day===day&&x.shift===shift?{...x,passed:newVal}:x);
-      return[...prev,{...r,kpi_type:'quality',day,shift,month:m,year:y,passed:newVal}];
+    const r=await put(`/kpi-calendar/${kpiType}`,{day,shift,passed:newVal,month:m,year:y,updated_by:role.toUpperCase()});
+    setKpiCal(prev=>{
+      const exists=prev.find(x=>x.kpi_type===kpiType&&x.day===day&&x.shift===shift);
+      if(exists) return prev.map(x=>x.kpi_type===kpiType&&x.day===day&&x.shift===shift?{...x,passed:newVal}:x);
+      return[...prev,{...r,kpi_type:kpiType,day,shift,month:m,year:y,passed:newVal}];
     });
   };
   const submitAp=async()=>{if(!apForm.phenomenon)return;const a=await post('/action-plan',{...apForm,created_by:role.toUpperCase()});setActionPlans(p=>[a,...p]);setApForm({date:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});show('Đã thêm Action Plan')};
@@ -215,7 +214,7 @@ export default function AdminPage({role}){
               <input className="f-input" placeholder="VD: 260122" value={coaForm.batch_number} onChange={e=>setCoaForm(p=>({...p,batch_number:e.target.value}))}/></div>
             <div className="f-group"><div className="f-label">Stage</div>
               <select className="f-select" value={coaForm.stage} onChange={e=>setCoaForm(p=>({...p,stage:e.target.value}))}>
-                <option>Granulation</option><option>Coated</option><option>Blending</option><option>Compression</option><option>Packaging</option><option>Other</option>
+                <option>Granulation</option><option>Tablet</option><option>Coated</option><option>Filling Capsul</option>
               </select></div>
           </div>
           <div className="f-row">
@@ -237,43 +236,50 @@ export default function AdminPage({role}){
             <div style={{fontSize:11,fontWeight:700,color:'var(--accent-cyan)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>📊 Dữ liệu sản xuất (chỉ PD)</div>
           </div>
 
-          {/* Quality Calendar */}
-          <Sec icon="🔵" bg="rgba(37,99,235,.12)" color="var(--accent-blue)" title="Quality Calendar — Nhập theo ca" open>
-            {(()=>{
-              const now=new Date();const m=now.getMonth()+1;const y=now.getFullYear();
-              const dim=new Date(y,m,0).getDate();
-              const lookup={};
-              qualityCal.forEach(d=>{lookup[`${d.day}-${d.shift}`]=d.passed});
-              const monthNames=['','Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
-              return(<div>
-                <div style={{fontSize:13,fontWeight:700,color:'var(--accent-blue)',marginBottom:12}}>📅 {monthNames[m]} {y} — Click ô để chuyển: ⬜ Chưa → 🟢 Đạt → 🔴 Không đạt → ⬜ Chưa</div>
-                <div className="qcal-grid">
-                  <div className="qcal-hdr-row">
-                    <div className="qcal-hdr-cell">Ngày</div>
-                    <div className="qcal-hdr-cell">Ca 1</div>
-                    <div className="qcal-hdr-cell">Ca 2</div>
+          {/* KPI Calendars - S Q D C */}
+          {[
+            {type:'safety',icon:'➕',bg:'rgba(185,28,28,.12)',color:'#b91c1c',title:'Safety (+) Calendar'},
+            {type:'quality',icon:'🟢',bg:'rgba(5,150,105,.12)',color:'#059669',title:'Quality (Q) Calendar'},
+            {type:'delivery',icon:'🔵',bg:'rgba(37,99,235,.12)',color:'#2563eb',title:'Delivery (D) Calendar'},
+            {type:'cost',icon:'🟡',bg:'rgba(202,138,4,.12)',color:'#ca8a04',title:'Cost (C) Calendar'},
+          ].map(kc=>(
+            <Sec key={kc.type} icon={kc.icon} bg={kc.bg} color={kc.color} title={`${kc.title} — Nhập theo ca`} open={kc.type==='safety'}>
+              {(()=>{
+                const now=new Date();const m=now.getMonth()+1;const y=now.getFullYear();
+                const dim=new Date(y,m,0).getDate();
+                const lookup={};
+                kpiCal.filter(d=>d.kpi_type===kc.type).forEach(d=>{lookup[`${d.day}-${d.shift}`]=d.passed});
+                const monthNames=['','Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+                return(<div>
+                  <div style={{fontSize:13,fontWeight:700,color:kc.color,marginBottom:12}}>📅 {monthNames[m]} {y} — Click ô: ⬜ Chưa → 🟢 Đạt → 🔴 Không đạt → ⬜ Chưa</div>
+                  <div className="qcal-grid">
+                    <div className="qcal-hdr-row">
+                      <div className="qcal-hdr-cell" style={{background:kc.color}}>Ngày</div>
+                      <div className="qcal-hdr-cell" style={{background:kc.color}}>Ca 1</div>
+                      <div className="qcal-hdr-cell" style={{background:kc.color}}>Ca 2</div>
+                    </div>
+                    {Array.from({length:dim},(_,i)=>i+1).map(day=>{
+                      const isToday=day===now.getDate();
+                      const isFuture=day>now.getDate();
+                      return(<div key={day} className={`qcal-row ${isToday?'qcal-today':''} ${isFuture?'qcal-future':''}`}>
+                        <div className="qcal-day">{day}</div>
+                        {[1,2].map(shift=>{
+                          const val=lookup[`${day}-${shift}`];
+                          let cls='qcal-cell';
+                          if(isFuture) cls+=' qcal-disabled';
+                          else if(val===true) cls+=' qcal-pass';
+                          else if(val===false) cls+=' qcal-fail';
+                          return(<div key={shift} className={cls} onClick={isFuture?undefined:()=>toggleKpiCal(kc.type,day,shift,val)}>
+                            {val===true?'✓':val===false?'✗':''}
+                          </div>);
+                        })}
+                      </div>);
+                    })}
                   </div>
-                  {Array.from({length:dim},(_,i)=>i+1).map(day=>{
-                    const isToday=day===now.getDate();
-                    const isFuture=day>now.getDate();
-                    return(<div key={day} className={`qcal-row ${isToday?'qcal-today':''} ${isFuture?'qcal-future':''}`}>
-                      <div className="qcal-day">{day}</div>
-                      {[1,2].map(shift=>{
-                        const val=lookup[`${day}-${shift}`];
-                        let cls='qcal-cell';
-                        if(isFuture) cls+=' qcal-disabled';
-                        else if(val===true) cls+=' qcal-pass';
-                        else if(val===false) cls+=' qcal-fail';
-                        return(<div key={shift} className={cls} onClick={isFuture?undefined:()=>toggleQualityCal(day,shift,val)}>
-                          {val===true?'✓':val===false?'✗':''}
-                        </div>);
-                      })}
-                    </div>);
-                  })}
-                </div>
-              </div>);
-            })()}
-          </Sec>
+                </div>);
+              })()}
+            </Sec>
+          ))}
 
           {/* Daily KPI */}
           <Sec icon="📊" bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title="Daily KPI (Upload hình)" open>

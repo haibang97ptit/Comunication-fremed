@@ -1,11 +1,13 @@
 import React from 'react';
 
 const COLORS = {
-  quality: { main: '#2563eb', light: '#dbeafe', label: 'Q' },
-  safety: { main: '#059669', light: '#d1fae5', label: 'S' },
-  delivery: { main: '#d97706', light: '#fef3c7', label: 'D' },
-  cost: { main: '#dc2626', light: '#fee2e2', label: 'C' },
+  safety:  { main: '#b91c1c', label: '+', fullName: 'SAFETY' },
+  quality: { main: '#059669', label: 'Q', fullName: 'QUALITY' },
+  delivery:{ main: '#2563eb', label: 'D', fullName: 'DELIVERY' },
+  cost:    { main: '#ca8a04', label: 'C', fullName: 'COST' },
 };
+
+const MONTH_EN = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function KpiCalendar({ type = 'quality', data = [], month, year }) {
   const cfg = COLORS[type] || COLORS.quality;
@@ -15,22 +17,24 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
   const daysInMonth = new Date(y, m, 0).getDate();
   const today = now.getMonth() + 1 === m && now.getFullYear() === y ? now.getDate() : -1;
 
-  // Build lookup: { "day-shift": passed }
   const lookup = {};
   data.filter(d => d.kpi_type === type).forEach(d => {
     lookup[`${d.day}-${d.shift}`] = d.passed;
   });
 
   const cx = 160, cy = 160, size = 320;
-  const rInner = 45;    // center circle
-  const rStart = 58;    // start of cells
-  const rEnd = 148;     // end of cells
-  const rNum = 153;     // number labels
-  const cellGap = 1;    // gap between rings
+  const rInner = 42;
+  const rStart = 56;
+  const rEnd = 145;
+  const rNum = 152;
+  const cellGap = 1.5;
   const shiftWidth = (rEnd - rStart - cellGap) / 2;
 
-  const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+  // Ca 1 = outer ring, Ca 2 = inner ring
+  const getRadii = (shift) => {
+    if (shift === 2) return [rStart, rStart + shiftWidth];
+    return [rStart + shiftWidth + cellGap, rEnd];
+  };
 
   const makeArc = (r1, r2, startAngle, endAngle) => {
     const s1 = startAngle * Math.PI / 180;
@@ -46,7 +50,7 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
   const cells = [];
   const labels = [];
   const sliceAngle = 360 / 31;
-  const pad = 0.6; // padding between slices in degrees
+  const pad = 0.6;
 
   for (let day = 1; day <= 31; day++) {
     const startA = (day - 1) * sliceAngle + pad;
@@ -55,7 +59,6 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
     const isValid = day <= daysInMonth;
     const isToday = day === today;
 
-    // Number label
     const lx = cx + rNum * Math.sin(midA * Math.PI / 180);
     const ly = cy - rNum * Math.cos(midA * Math.PI / 180);
     labels.push(
@@ -67,24 +70,19 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
     );
 
     if (!isValid) {
-      // Gray out invalid days
-      for (let s = 0; s < 2; s++) {
-        const r1 = rStart + s * (shiftWidth + cellGap);
-        const r2 = r1 + shiftWidth;
+      for (let s = 1; s <= 2; s++) {
+        const [r1, r2] = getRadii(s);
         cells.push(<path key={`c-${day}-${s}`} d={makeArc(r1, r2, startA, endA)} fill="#f3f4f6" stroke="white" strokeWidth={0.5} />);
       }
       continue;
     }
 
-    // Shift 1 (inner ring) and Shift 2 (outer ring)
     for (let s = 1; s <= 2; s++) {
-      const r1 = rStart + (s - 1) * (shiftWidth + cellGap);
-      const r2 = r1 + shiftWidth;
-      const key = `${day}-${s}`;
-      const val = lookup[key];
-      let fill = 'var(--bg-secondary)'; // default: not filled
-      if (val === true) fill = '#059669';       // passed = xanh lá cây
-      else if (val === false) fill = '#ef4444'; // failed = đỏ
+      const [r1, r2] = getRadii(s);
+      const val = lookup[`${day}-${s}`];
+      let fill = 'var(--bg-secondary)';
+      if (val === true) fill = '#059669';
+      else if (val === false) fill = '#ef4444';
 
       cells.push(
         <path key={`c-${day}-${s}`} d={makeArc(r1, r2, startA, endA)}
@@ -92,7 +90,6 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
       );
     }
 
-    // Today highlight ring
     if (isToday) {
       cells.push(
         <path key={`today-${day}`} d={makeArc(rStart - 2, rEnd + 2, startA - 0.3, endA + 0.3)}
@@ -103,22 +100,20 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', height: '100%' }}>
-      {/* Background circles for reference */}
       <circle cx={cx} cy={cy} r={rEnd + 5} fill="none" stroke="var(--border-color)" strokeWidth={0.3} />
       <circle cx={cx} cy={cy} r={rStart - 2} fill="none" stroke="var(--border-color)" strokeWidth={0.3} />
 
-      {/* Cells */}
       {cells}
-
-      {/* Number labels */}
       {labels}
 
       {/* Center circle */}
-      <circle cx={cx} cy={cy} r={rInner} fill={cfg.main} opacity={0.85} />
-      <text x={cx} y={cy - 6} textAnchor="middle" dominantBaseline="middle"
-        fontSize={32} fontWeight={900} fill="white">{cfg.label}</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle"
-        fontSize={7} fontWeight={600} fill="rgba(255,255,255,0.8)">{monthNames[m]} {y}</text>
+      <circle cx={cx} cy={cy} r={rInner} fill={cfg.main} opacity={0.9} />
+      <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle"
+        fontSize={28} fontWeight={900} fill="white">{cfg.label}</text>
+      <text x={cx} y={cy + 8} textAnchor="middle" dominantBaseline="middle"
+        fontSize={6} fontWeight={700} fill="rgba(255,255,255,0.9)" letterSpacing="1">{cfg.fullName}</text>
+      <text x={cx} y={cy + 18} textAnchor="middle" dominantBaseline="middle"
+        fontSize={6} fontWeight={600} fill="rgba(255,255,255,0.7)">{MONTH_EN[m]} {y}</text>
 
       {/* Legend */}
       <g transform={`translate(${size - 70}, ${size - 25})`}>

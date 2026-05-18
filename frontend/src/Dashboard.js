@@ -205,6 +205,10 @@ export default function Dashboard() {
       </div>
       <div className="countdown-bar"><div className="countdown-fill" style={{width:`${countdown}%`}}/></div>
 
+      {/* Slide nav arrows - ẩn, hover mới hiện */}
+      <div className="slide-arrow slide-arrow-left" onClick={()=>setSlide(1)}>‹</div>
+      <div className="slide-arrow slide-arrow-right" onClick={()=>setSlide(2)}>›</div>
+
       <div className={`slides-wrap s${slide}`}>
         {/* ===== SLIDE 1: Information ===== */}
         <div className="slide">
@@ -245,7 +249,7 @@ export default function Dashboard() {
 
             {/* New Problems */}
             <div className="card new-problems">
-              <div className="card-hdr"><div className="card-icon">🚨</div><div className="card-title">New Problem</div></div>
+              <div className="card-hdr"><div className="card-icon">🚨</div><div className="card-title">Sự cố / New Problem</div></div>
               <div className="card-body">
                 {problems.length===0?<div className="empty"><div className="empty-icon">✅</div><div className="empty-text">Không có sự cố</div></div>:
                 problems.map(p=>(
@@ -259,7 +263,7 @@ export default function Dashboard() {
 
             {/* Release COA */}
             <div className="card release-coa">
-              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Kế Hoạch CoA</div></div>
+              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Kế Hoạch CoA / CoA Plan</div></div>
               <div className="card-body">
                 {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:(
                 <table className="coa-table">
@@ -290,23 +294,13 @@ export default function Dashboard() {
         {/* ===== SLIDE 2: Production ===== */}
         <div className="slide">
           <div className="s2-grid-v2">
-            {/* KPI row - 4 cột ngang */}
+            {/* KPI row - 4 vòng tròn calendar */}
             <div className="kpi-row">
-              {['safety','quality','delivery','cost'].map(t=>{
-                const k=kpi.find(x=>x.kpi_type===t);
-                // Quality dùng calendar vòng tròn
-                if (t==='quality') {
-                  return(
-                    <div key={t} className="kpi-card-lg quality kpi-calendar-card">
-                      <KpiCalendar type="quality" data={kpiCalendar}/>
-                    </div>);
-                }
-                return(
-                  <div key={t} className={`kpi-card-lg ${t}`}>
-                    <div className="kpi-lbl-lg"><div className="kpi-badge-lg">{t[0].toUpperCase()}</div><span className="kpi-name-lg">{t}</span></div>
-                    <div className="kpi-img-lg">{k?.image_url?<img src={k.image_url.startsWith('/')?BACKEND+k.image_url:k.image_url} alt={t}/>:<span>Chưa có</span>}</div>
-                  </div>);
-              })}
+              {['safety','quality','delivery','cost'].map(t=>(
+                <div key={t} className={`kpi-card-lg ${t} kpi-calendar-card`}>
+                  <KpiCalendar type={t} data={kpiCalendar}/>
+                </div>
+              ))}
             </div>
 
             {/* Action Plan - full width */}

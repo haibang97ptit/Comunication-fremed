@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import './Dashboard.css';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const _origin = window.location.origin; // e.g. http://192.168.1.100:3000
+const SOCKET_URL = _origin;
+const API_URL = `${_origin}/api`;
 const SLIDE_INTERVAL = 15000;
 
 function playAlarm() {
@@ -146,6 +147,13 @@ export default function Dashboard() {
   const {kpi,actionPlan,goodNews,monthlyStar,announcements,productionPlan,shiftSchedule,problems,coa,others} = data;
   const BACKEND = SOCKET_URL;
 
+  const DeptTag = ({by}) => {
+    if (!by) return null;
+    const label = by.toUpperCase();
+    const colors = { PD: '#3b82f6', QC: '#f59e0b', QA: '#10b981' };
+    return <span className="dept-tag" style={{background: colors[label] || '#8899b8'}}>{label}</span>;
+  };
+
   return (
     <div className={`dashboard-page ${pageShake?'page-shake':''}`}>
       {/* Notification toasts */}
@@ -190,7 +198,7 @@ export default function Dashboard() {
               <div className="card-hdr"><div className="card-icon">📰</div><div className="card-title">Tin Tốt / Good News</div></div>
               <div className="card-body">
                 {goodNews.length===0?<div className="empty"><div className="empty-icon">📰</div><div className="empty-text">Chưa có tin tốt</div></div>:
-                goodNews.map((n,i)=><div key={n.id} className="news-item"><span className="news-idx">{i+1}</span>{n.content}</div>)}
+                goodNews.map((n,i)=><div key={n.id} className="news-item"><span className="news-idx">{i+1}</span><DeptTag by={n.created_by}/>{n.content}</div>)}
               </div>
             </div>
 
@@ -213,7 +221,7 @@ export default function Dashboard() {
               <div className="card-hdr"><div className="card-icon">📢</div><div className="card-title">Thông Báo / Announce</div></div>
               <div className="card-body">
                 {announcements.length===0?<div className="empty"><div className="empty-icon">📢</div><div className="empty-text">Chưa có thông báo</div></div>:
-                announcements.map(a=><div key={a.id} className="ann-item">{a.content}</div>)}
+                announcements.map(a=><div key={a.id} className="ann-item"><DeptTag by={a.created_by}/>{a.content}</div>)}
               </div>
             </div>
 
@@ -226,7 +234,7 @@ export default function Dashboard() {
                   <div key={p.id} className={`prob-item sev-${p.severity} ${flashIds.has(p.id)?'flash':''}`}>
                     <div className="prob-hdr"><span className="prob-dept">{p.department}</span><span className={`prob-badge ${p.severity}`}>{p.severity==='critical'?'🚨 CRITICAL':p.severity.toUpperCase()}</span></div>
                     <div className="prob-desc">{p.description}</div>
-                    <div className="prob-meta">{p.created_at&&new Date(p.created_at).toLocaleString('vi-VN')}</div>
+                    <div className="prob-meta"><DeptTag by={p.reported_by}/>{p.created_at&&new Date(p.created_at).toLocaleString('vi-VN')}</div>
                   </div>))}
               </div>
             </div>
@@ -236,7 +244,7 @@ export default function Dashboard() {
               <div className="card-hdr"><div className="card-icon">📋</div><div className="card-title">Khác / Others</div></div>
               <div className="card-body">
                 {others.length===0?<div className="empty"><div className="empty-icon">📋</div><div className="empty-text">Chưa có nội dung</div></div>:
-                others.map(o=><div key={o.id} className="other-item">{o.content}</div>)}
+                others.map(o=><div key={o.id} className="other-item"><DeptTag by={o.created_by}/>{o.content}</div>)}
               </div>
             </div>
           </div>
@@ -294,7 +302,7 @@ export default function Dashboard() {
                 <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Ban Hành COA</div></div>
                 <div className="card-body">
                   {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:
-                  coa.map(c=><div key={c.id} className="coa-item">{c.content}</div>)}
+                  coa.map(c=><div key={c.id} className="coa-item"><DeptTag by={c.created_by}/>{c.content}</div>)}
                 </div>
               </div>
             </div>

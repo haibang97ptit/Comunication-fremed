@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import './Dashboard.css';
 import './Admin.css';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-const BACKEND = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
+const API = `${window.location.origin}/api`;
+const BACKEND = window.location.origin;
 const ROLE_LABELS = { pd: 'Phòng PD (Production)', qc: 'Phòng QC (Quality Control)', qa: 'Phòng QA (Quality Assurance)' };
 
 // Toast

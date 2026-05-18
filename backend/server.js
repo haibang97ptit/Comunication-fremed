@@ -49,7 +49,7 @@ app.get('/api/dashboard', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
-    const [kpi, actionPlan, goodNews, monthlyStar, announcements, productionPlan, shiftSchedule, problems, coa, others] = await Promise.all([
+    const [kpi, actionPlan, goodNews, monthlyStar, announcements, productionPlan, shiftSchedule, problems, coa, others, kpiCalendar] = await Promise.all([
       pool.query('SELECT * FROM daily_kpi WHERE date=$1 AND archived=false', [today]),
       pool.query('SELECT * FROM action_plan WHERE archived=false ORDER BY date DESC, created_at DESC LIMIT 20'),
       pool.query('SELECT * FROM good_news WHERE archived=false ORDER BY created_at DESC LIMIT 20'),
@@ -60,12 +60,13 @@ app.get('/api/dashboard', async (req, res) => {
       pool.query("SELECT * FROM problems WHERE status!='resolved' AND archived=false ORDER BY CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END, created_at DESC LIMIT 20"),
       pool.query('SELECT * FROM release_coa WHERE archived=false ORDER BY created_at DESC LIMIT 20'),
       pool.query('SELECT * FROM others WHERE archived=false ORDER BY created_at DESC LIMIT 20'),
+      pool.query('SELECT * FROM kpi_calendar WHERE month=$1 AND year=$2', [now.getMonth()+1, now.getFullYear()]),
     ]);
     res.json({
       kpi: kpi.rows, actionPlan: actionPlan.rows, goodNews: goodNews.rows,
       monthlyStar: monthlyStar.rows[0]||null, announcements: announcements.rows,
       productionPlan: productionPlan.rows[0]||null, shiftSchedule: shiftSchedule.rows[0]||null,
-      problems: problems.rows, coa: coa.rows, others: others.rows,
+      problems: problems.rows, coa: coa.rows, others: others.rows, kpiCalendar: kpiCalendar.rows,
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -102,6 +103,34 @@ app.put('/api/kpi/:type', async (req, res) => {
        ON CONFLICT(date,kpi_type) DO UPDATE SET image_url=COALESCE($3,daily_kpi.image_url),updated_by=$4,updated_at=NOW() RETURNING *`,
       [date, type, image_url, updated_by]);
     io.emit('kpi-updated', r.rows[0]);
+    res.json(r.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- KPI Calendar (vòng tròn S/Q/D/C) ---
+app.get('/api/kpi-calendar/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const now = new Date();
+    const month = parseInt(req.query.month) || now.getMonth()+1;
+    const year = parseInt(req.query.year) || now.getFullYear();
+    const r = await pool.query('SELECT * FROM kpi_calendar WHERE kpi_type=$1 AND month=$2 AND year=$3 ORDER BY day,shift', [type,month,year]);
+    res.json(r.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/kpi-calendar/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { day, shift, passed, month, year, updated_by } = req.body;
+    const now = new Date();
+    const m = month || now.getMonth()+1;
+    const y = year || now.getFullYear();
+    const r = await pool.query(
+      `INSERT INTO kpi_calendar(kpi_type,month,year,day,shift,passed,updated_by,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,NOW())
+       ON CONFLICT(kpi_type,year,month,day,shift) DO UPDATE SET passed=$6,updated_by=$7,updated_at=NOW() RETURNING *`,
+      [type, m, y, day, shift, passed, updated_by]);
+    io.emit('kpi-calendar-updated', { ...r.rows[0], kpi_type: type });
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -229,9 +258,21 @@ app.get('/api/coa', async (req, res) => {
 });
 app.post('/api/coa', async (req, res) => {
   try {
-    const { content, created_by } = req.body;
-    const r = await pool.query('INSERT INTO release_coa(content,created_by) VALUES($1,$2) RETURNING *', [content,created_by]);
+    const { product, batch_number, stage, submit_coa, approve_coa, created_by } = req.body;
+    const r = await pool.query(
+      'INSERT INTO release_coa(product,batch_number,stage,submit_coa,approve_coa,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
+      [product, batch_number, stage||'', submit_coa||'', approve_coa||'', created_by]);
     io.emit('coa-added', r.rows[0]);
+    res.json(r.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.put('/api/coa/:id', async (req, res) => {
+  try {
+    const { product, batch_number, stage, submit_coa, approve_coa } = req.body;
+    const r = await pool.query(
+      'UPDATE release_coa SET product=COALESCE($1,product),batch_number=COALESCE($2,batch_number),stage=COALESCE($3,stage),submit_coa=COALESCE($4,submit_coa),approve_coa=COALESCE($5,approve_coa) WHERE id=$6 RETURNING *',
+      [product, batch_number, stage, submit_coa, approve_coa, req.params.id]);
+    io.emit('coa-updated', r.rows[0]);
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

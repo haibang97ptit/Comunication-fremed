@@ -106,3 +106,18 @@
 /* Archive All button */
 .archive-all-section { background:rgba(239,68,68,.05); border:1px solid rgba(239,68,68,.15); border-radius:var(--radius-lg); padding:20px; text-align:center; }
 .archive-all-section p { font-size:12px; color:var(--text-secondary); margin-bottom:12px; }
+
+/* Quality Calendar Grid */
+.qcal-grid { display:grid; grid-template-columns:50px 1fr 1fr; gap:0; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; max-height:500px; overflow-y:auto; }
+.qcal-hdr-row { display:contents; }
+.qcal-hdr-cell { padding:8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:white; background:var(--accent-blue); text-align:center; position:sticky; top:0; z-index:1; }
+.qcal-row { display:contents; }
+.qcal-day { padding:6px 8px; font-size:12px; font-weight:700; color:var(--text-primary); border-bottom:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; background:var(--bg-card); }
+.qcal-cell { padding:6px; border-bottom:1px solid var(--border-color); border-left:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; font-weight:800; min-height:36px; transition:all .15s; background:var(--bg-card); }
+.qcal-cell:hover { background:var(--bg-card-hover); }
+.qcal-cell.qcal-pass { background:rgba(5,150,105,.12); color:#059669; }
+.qcal-cell.qcal-fail { background:rgba(220,38,38,.1); color:#dc2626; }
+.qcal-today .qcal-day { background:var(--accent-blue); color:white; border-radius:0; }
+.qcal-today .qcal-cell { border-bottom:2px solid var(--accent-blue); border-top:2px solid var(--accent-blue); }
+.qcal-future .qcal-day { color:var(--text-muted); opacity:.4; }
+.qcal-cell.qcal-disabled { background:var(--bg-secondary); opacity:.3; cursor:not-allowed; }

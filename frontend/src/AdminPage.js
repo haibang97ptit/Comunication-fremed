@@ -52,6 +52,7 @@ export default function AdminPage({role}){
   const[coa,setCoa]=useState([]);
   const[planForm,setPlanForm]=useState({image_url:null,notes:''});
   const[shiftForm,setShiftForm]=useState({image_url:null,notes:''});
+  const[qualityCal,setQualityCal]=useState([]);
 
   // Forms
   const[newGoodNews,setNewGoodNews]=useState('');
@@ -60,7 +61,7 @@ export default function AdminPage({role}){
   const[starForm,setStarForm]=useState({employee_name:'',employee_image:null,content:''});
   const[probForm,setProbForm]=useState({department:'',description:'',severity:'info'});
   const[apForm,setApForm]=useState({date:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});
-  const[newCoa,setNewCoa]=useState('');
+  const[coaForm,setCoaForm]=useState({product:'',batch_number:'',stage:'Granulation',submit_coa:'',approve_coa:''});
 
   // Force scroll
   useEffect(()=>{if(!authed)return;/*no-op*/},[authed]);
@@ -79,6 +80,7 @@ export default function AdminPage({role}){
       if(d.shiftSchedule)setShiftForm({image_url:d.shiftSchedule.image_url,notes:d.shiftSchedule.notes||''});
       if(d.monthlyStar)setStarForm({employee_name:d.monthlyStar.employee_name||'',employee_image:d.monthlyStar.employee_image,content:d.monthlyStar.content||''});
       (d.kpi||[]).forEach(k=>setKpiForms(p=>({...p,[k.kpi_type]:{image_url:k.image_url}})));
+      if(d.kpiCalendar) setQualityCal(d.kpiCalendar.filter(x=>x.kpi_type==='quality'));
     }).catch(console.error);
   },[authed]);
 
@@ -95,8 +97,22 @@ export default function AdminPage({role}){
   const submitProblem=async()=>{if(!probForm.department||!probForm.description)return;const p=await post('/problems',{...probForm,reported_by:role.toUpperCase()});setProblems(prev=>[p,...prev]);setProbForm({department:'',description:'',severity:'info'});show('Đã báo cáo sự cố')};
   const resolveProblem=async(id)=>{await put(`/problems/${id}/resolve`);setProblems(p=>p.filter(x=>x.id!==id));show('Đã xử lý sự cố')};
   const submitKpi=async(type)=>{await put(`/kpi/${type}`,{image_url:kpiForms[type].image_url,updated_by:role.toUpperCase()});show(`Đã cập nhật ${type.toUpperCase()}`)};
+  const toggleQualityCal=async(day,shift,currentPassed)=>{
+    const now=new Date();const m=now.getMonth()+1;const y=now.getFullYear();
+    // Cycle: null → true (đạt) → false (không đạt) → null (xóa/reset)
+    let newVal;
+    if(currentPassed===undefined||currentPassed===null) newVal=true;
+    else if(currentPassed===true) newVal=false;
+    else newVal=null;
+    const r=await put('/kpi-calendar/quality',{day,shift,passed:newVal,month:m,year:y,updated_by:role.toUpperCase()});
+    setQualityCal(prev=>{
+      const exists=prev.find(x=>x.day===day&&x.shift===shift);
+      if(exists) return prev.map(x=>x.day===day&&x.shift===shift?{...x,passed:newVal}:x);
+      return[...prev,{...r,kpi_type:'quality',day,shift,month:m,year:y,passed:newVal}];
+    });
+  };
   const submitAp=async()=>{if(!apForm.phenomenon)return;const a=await post('/action-plan',{...apForm,created_by:role.toUpperCase()});setActionPlans(p=>[a,...p]);setApForm({date:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});show('Đã thêm Action Plan')};
-  const submitCoa=async()=>{if(!newCoa.trim())return;const c=await post('/coa',{content:newCoa,created_by:role.toUpperCase()});setCoa(p=>[c,...p]);setNewCoa('');show('Đã thêm COA')};
+  const submitCoa=async()=>{if(!coaForm.product.trim()||!coaForm.batch_number.trim())return;const c=await post('/coa',{...coaForm,created_by:role.toUpperCase()});setCoa(p=>[c,...p]);setCoaForm({product:'',batch_number:'',stage:'Granulation',submit_coa:'',approve_coa:''});show('Đã thêm COA')};
   const submitPlan=async()=>{const t=new Date(),ws=new Date(t);ws.setDate(t.getDate()-t.getDay()+1);const we=new Date(ws);we.setDate(ws.getDate()+6);
     await put('/production-plan',{week_start:ws.toISOString().split('T')[0],week_end:we.toISOString().split('T')[0],image_url:planForm.image_url,notes:planForm.notes,updated_by:role.toUpperCase()});show('Đã cập nhật kế hoạch SX')};
   const submitShift=async()=>{await put('/shift-schedule',{image_url:shiftForm.image_url,notes:shiftForm.notes,updated_by:role.toUpperCase()});show('Đã cập nhật phân ca')};
@@ -191,12 +207,27 @@ export default function AdminPage({role}){
         </Sec>
 
         {/* Release COA (all roles) */}
-        <Sec icon="📄" bg="rgba(139,92,246,.12)" color="var(--accent-purple)" title="Ban Hành COA / Release COA">
-          <div className="f-row full"><div className="f-group"><div className="f-label">Nội dung COA</div>
-            <textarea className="f-textarea" placeholder="Nhập nội dung COA..." value={newCoa} onChange={e=>setNewCoa(e.target.value)}/></div></div>
+        <Sec icon="📄" bg="rgba(139,92,246,.12)" color="var(--accent-purple)" title="Kế Hoạch CoA / Release COA">
+          <div className="f-row cols3">
+            <div className="f-group"><div className="f-label">Product *</div>
+              <input className="f-input" placeholder="VD: TIDILON FORTE" value={coaForm.product} onChange={e=>setCoaForm(p=>({...p,product:e.target.value}))}/></div>
+            <div className="f-group"><div className="f-label">Batch Number *</div>
+              <input className="f-input" placeholder="VD: 260122" value={coaForm.batch_number} onChange={e=>setCoaForm(p=>({...p,batch_number:e.target.value}))}/></div>
+            <div className="f-group"><div className="f-label">Stage</div>
+              <select className="f-select" value={coaForm.stage} onChange={e=>setCoaForm(p=>({...p,stage:e.target.value}))}>
+                <option>Granulation</option><option>Coated</option><option>Blending</option><option>Compression</option><option>Packaging</option><option>Other</option>
+              </select></div>
+          </div>
+          <div className="f-row">
+            <div className="f-group"><div className="f-label">Submit CoA</div>
+              <input className="f-input" placeholder="VD: 9h- 18/05/2026" value={coaForm.submit_coa} onChange={e=>setCoaForm(p=>({...p,submit_coa:e.target.value}))}/></div>
+            <div className="f-group"><div className="f-label">Approve CoA</div>
+              <input className="f-input" placeholder="VD: 10h- 18/05/2026" value={coaForm.approve_coa} onChange={e=>setCoaForm(p=>({...p,approve_coa:e.target.value}))}/></div>
+          </div>
           <div className="f-actions"><button className="btn primary" onClick={submitCoa}>📄 Thêm COA</button></div>
           {coa.length>0&&<div className="ex-items"><div className="ex-title">Đang hiển thị ({coa.length})</div>
-            {coa.map(c=><div key={c.id} className="ex-item"><div className="ex-item-content">{c.content}</div>
+            {coa.map(c=><div key={c.id} className="ex-item">
+              <div className="ex-item-content"><strong>{c.product}</strong> — Lô {c.batch_number} — {c.stage} {c.submit_coa&&<span>| Submit: {c.submit_coa}</span>} {c.approve_coa&&<span>| Approve: {c.approve_coa}</span>}</div>
               <button className="ex-item-btn archive" onClick={()=>archive('/coa',c.id,coa,setCoa,'COA')}>📦 Lưu trữ</button></div>)}</div>}
         </Sec>
 
@@ -206,8 +237,46 @@ export default function AdminPage({role}){
             <div style={{fontSize:11,fontWeight:700,color:'var(--accent-cyan)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>📊 Dữ liệu sản xuất (chỉ PD)</div>
           </div>
 
+          {/* Quality Calendar */}
+          <Sec icon="🔵" bg="rgba(37,99,235,.12)" color="var(--accent-blue)" title="Quality Calendar — Nhập theo ca" open>
+            {(()=>{
+              const now=new Date();const m=now.getMonth()+1;const y=now.getFullYear();
+              const dim=new Date(y,m,0).getDate();
+              const lookup={};
+              qualityCal.forEach(d=>{lookup[`${d.day}-${d.shift}`]=d.passed});
+              const monthNames=['','Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+              return(<div>
+                <div style={{fontSize:13,fontWeight:700,color:'var(--accent-blue)',marginBottom:12}}>📅 {monthNames[m]} {y} — Click ô để chuyển: ⬜ Chưa → 🟢 Đạt → 🔴 Không đạt → ⬜ Chưa</div>
+                <div className="qcal-grid">
+                  <div className="qcal-hdr-row">
+                    <div className="qcal-hdr-cell">Ngày</div>
+                    <div className="qcal-hdr-cell">Ca 1</div>
+                    <div className="qcal-hdr-cell">Ca 2</div>
+                  </div>
+                  {Array.from({length:dim},(_,i)=>i+1).map(day=>{
+                    const isToday=day===now.getDate();
+                    const isFuture=day>now.getDate();
+                    return(<div key={day} className={`qcal-row ${isToday?'qcal-today':''} ${isFuture?'qcal-future':''}`}>
+                      <div className="qcal-day">{day}</div>
+                      {[1,2].map(shift=>{
+                        const val=lookup[`${day}-${shift}`];
+                        let cls='qcal-cell';
+                        if(isFuture) cls+=' qcal-disabled';
+                        else if(val===true) cls+=' qcal-pass';
+                        else if(val===false) cls+=' qcal-fail';
+                        return(<div key={shift} className={cls} onClick={isFuture?undefined:()=>toggleQualityCal(day,shift,val)}>
+                          {val===true?'✓':val===false?'✗':''}
+                        </div>);
+                      })}
+                    </div>);
+                  })}
+                </div>
+              </div>);
+            })()}
+          </Sec>
+
           {/* Daily KPI */}
-          <Sec icon="📊" bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title="Daily KPI" open>
+          <Sec icon="📊" bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title="Daily KPI (Upload hình)" open>
             <div className="kpi-grid">
               {['safety','quality','delivery','cost'].map(t=>(
                 <div key={t} className={`kpi-input-card ${t}`}>

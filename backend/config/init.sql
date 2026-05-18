@@ -2,7 +2,7 @@
 -- PRODUCTION DASHBOARD - Database Schema v2
 -- =============================================
 
--- Bảng Daily KPI (Safety, Quality, Delivery, Cost)
+-- Bảng Daily KPI (Safety, Quality, Delivery, Cost) - image upload
 CREATE TABLE IF NOT EXISTS daily_kpi (
     id SERIAL PRIMARY KEY,
     date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -12,6 +12,20 @@ CREATE TABLE IF NOT EXISTS daily_kpi (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     archived BOOLEAN DEFAULT FALSE,
     UNIQUE(date, kpi_type)
+);
+
+-- Bảng KPI Calendar (vòng tròn 31 ngày × 2 ca)
+CREATE TABLE IF NOT EXISTS kpi_calendar (
+    id SERIAL PRIMARY KEY,
+    kpi_type VARCHAR(20) NOT NULL CHECK (kpi_type IN ('safety', 'quality', 'delivery', 'cost')),
+    month INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    shift INTEGER NOT NULL CHECK (shift IN (1, 2)),
+    passed BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_by VARCHAR(100),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(kpi_type, year, month, day, shift)
 );
 
 -- Bảng Action Plan
@@ -88,8 +102,11 @@ CREATE TABLE IF NOT EXISTS shift_schedule (
 -- Bảng Ban hành COA / Release COA
 CREATE TABLE IF NOT EXISTS release_coa (
     id SERIAL PRIMARY KEY,
-    date DATE NOT NULL DEFAULT CURRENT_DATE,
-    content TEXT NOT NULL,
+    product VARCHAR(200) NOT NULL,
+    batch_number VARCHAR(100) NOT NULL,
+    stage VARCHAR(100),
+    submit_coa VARCHAR(200),
+    approve_coa VARCHAR(200),
     created_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     archived BOOLEAN DEFAULT FALSE
@@ -144,8 +161,11 @@ INSERT INTO action_plan (date, phenomenon, rootcause, action, pic, status, creat
     (CURRENT_DATE, 'Máy ép #3 dừng đột ngột', 'Hỏng sensor nhiệt', 'Thay sensor mới', 'Trần Văn B', 'Open', 'PD')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO release_coa (content, created_by) VALUES
-    ('COA lô SP-2024-001 đã ban hành', 'PD')
+INSERT INTO release_coa (product, batch_number, stage, submit_coa, approve_coa, created_by) VALUES
+    ('TIDILON FORTE', '260122', 'Granulation', '9h- 18/05/2026', '10h- 18/05/2026', 'PD'),
+    ('TIDILON FORTE', '260123', 'Granulation', '9h- 18/05/2026', '10h- 18/05/2026', 'PD'),
+    ('CONTISOR 5', '260133', 'Granulation', '', '', 'PD'),
+    ('FREBAMOL 400/500', '260120', 'Coated', '11h- 19/05/2026', '12h- 19/05/2026', 'PD')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO others (content, created_by) VALUES

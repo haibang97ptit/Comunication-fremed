@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import KpiCalendar from './KpiCalendar';
 import './Dashboard.css';
 
 const _origin = window.location.origin; // e.g. http://192.168.1.100:3000
@@ -65,7 +66,7 @@ export default function Dashboard() {
   const [countdown, setCountdown] = useState(100);
   const [now, setNow] = useState(new Date());
   const [connected, setConnected] = useState(false);
-  const [data, setData] = useState({ kpi:[], actionPlan:[], goodNews:[], monthlyStar:null, announcements:[], productionPlan:null, shiftSchedule:null, problems:[], coa:[], others:[] });
+  const [data, setData] = useState({ kpi:[], actionPlan:[], goodNews:[], monthlyStar:null, announcements:[], productionPlan:null, shiftSchedule:null, problems:[], coa:[], others:[], kpiCalendar:[] });
   const [critAlert, setCritAlert] = useState(null);
   const [pageShake, setPageShake] = useState(false);
   const [flashIds, setFlashIds] = useState(new Set());
@@ -123,12 +124,20 @@ export default function Dashboard() {
     s.on('production-plan-updated',pp=>{setData(p=>({...p,productionPlan:pp}));showNotif('production-plan-updated',pp)});
     s.on('shift-schedule-updated',ss=>{setData(p=>({...p,shiftSchedule:ss}));showNotif('shift-schedule-updated',ss)});
     s.on('coa-added',c=>{setData(p=>({...p,coa:[c,...p.coa]}));showNotif('coa-added',c)});
+    s.on('coa-updated',c=>{setData(p=>({...p,coa:p.coa.map(x=>x.id===c.id?c:x)}));showNotif('coa-added',c)});
     s.on('release_coa-archived',c=>setData(p=>({...p,coa:p.coa.filter(x=>x.id!==c.id)})));
     s.on('new-problem',pr=>{setData(p=>({...p,problems:[pr,...p.problems]}));if(pr.severity==='critical')triggerCritical(pr);else showNotif('new-problem',pr)});
     s.on('problem-resolved',pr=>setData(p=>({...p,problems:p.problems.filter(x=>x.id!==pr.id)})));
     s.on('problems-archived',pr=>setData(p=>({...p,problems:p.problems.filter(x=>x.id!==pr.id)})));
     s.on('others-added',o=>{setData(p=>({...p,others:[o,...p.others]}));showNotif('others-added',o)});
     s.on('others-archived',o=>setData(p=>({...p,others:p.others.filter(x=>x.id!==o.id)})));
+    s.on('kpi-calendar-updated',entry=>{
+      setData(p=>({...p,kpiCalendar:
+        p.kpiCalendar.find(k=>k.kpi_type===entry.kpi_type&&k.day===entry.day&&k.shift===entry.shift&&k.month===entry.month&&k.year===entry.year)
+          ?p.kpiCalendar.map(k=>k.kpi_type===entry.kpi_type&&k.day===entry.day&&k.shift===entry.shift&&k.month===entry.month&&k.year===entry.year?entry:k)
+          :[...p.kpiCalendar,entry]
+      }));
+    });
     s.on('all-archived',()=>setData(p=>({...p,kpi:[],actionPlan:[],goodNews:[],monthlyStar:null,announcements:[],productionPlan:null,shiftSchedule:null,problems:[],coa:[],others:[]})));
     return()=>s.disconnect();
   },[triggerCritical,showNotif]);
@@ -146,7 +155,7 @@ export default function Dashboard() {
     return()=>{clearTimeout(ti);clearInterval(ci)};
   },[slide,paused]);
 
-  const {kpi,actionPlan,goodNews,monthlyStar,announcements,productionPlan,shiftSchedule,problems,coa,others} = data;
+  const {kpi,actionPlan,goodNews,monthlyStar,announcements,productionPlan,shiftSchedule,problems,coa,others,kpiCalendar} = data;
   const BACKEND = SOCKET_URL;
 
   const DeptTag = ({by}) => {
@@ -250,10 +259,20 @@ export default function Dashboard() {
 
             {/* Release COA */}
             <div className="card release-coa">
-              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Ban Hành COA</div></div>
+              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Kế Hoạch CoA</div></div>
               <div className="card-body">
-                {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:
-                coa.map(c=><div key={c.id} className="coa-item"><DeptTag by={c.created_by}/>{c.content}</div>)}
+                {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:(
+                <table className="coa-table">
+                  <thead><tr><th>Product</th><th>Batch</th><th>Stage</th><th>Submit CoA</th><th>Approve CoA</th></tr></thead>
+                  <tbody>{coa.map(c=>(
+                    <tr key={c.id} className={c.approve_coa?'coa-done':''}>
+                      <td className="coa-product">{c.product}</td>
+                      <td>{c.batch_number}</td>
+                      <td>{c.stage}</td>
+                      <td className="coa-time">{c.submit_coa||'—'}</td>
+                      <td className="coa-time">{c.approve_coa||'—'}</td>
+                    </tr>))}</tbody>
+                </table>)}
               </div>
             </div>
 
@@ -270,25 +289,32 @@ export default function Dashboard() {
 
         {/* ===== SLIDE 2: Production ===== */}
         <div className="slide">
-          <div className="s2-grid">
-            {/* KPI column */}
-            <div className="kpi-col">
+          <div className="s2-grid-v2">
+            {/* KPI row - 4 cột ngang */}
+            <div className="kpi-row">
               {['safety','quality','delivery','cost'].map(t=>{
                 const k=kpi.find(x=>x.kpi_type===t);
+                // Quality dùng calendar vòng tròn
+                if (t==='quality') {
+                  return(
+                    <div key={t} className="kpi-card-lg quality kpi-calendar-card">
+                      <KpiCalendar type="quality" data={kpiCalendar}/>
+                    </div>);
+                }
                 return(
-                  <div key={t} className={`kpi-card ${t}`}>
-                    <div className="kpi-lbl"><div className="kpi-badge">{t[0].toUpperCase()}</div><span className="kpi-name">{t}</span></div>
-                    <div className="kpi-img">{k?.image_url?<img src={k.image_url.startsWith('/')?BACKEND+k.image_url:k.image_url} alt={t}/>:<span>Chưa có</span>}</div>
+                  <div key={t} className={`kpi-card-lg ${t}`}>
+                    <div className="kpi-lbl-lg"><div className="kpi-badge-lg">{t[0].toUpperCase()}</div><span className="kpi-name-lg">{t}</span></div>
+                    <div className="kpi-img-lg">{k?.image_url?<img src={k.image_url.startsWith('/')?BACKEND+k.image_url:k.image_url} alt={t}/>:<span>Chưa có</span>}</div>
                   </div>);
               })}
             </div>
 
-            {/* Action Plan */}
-            <div className="card action-plan">
+            {/* Action Plan - full width */}
+            <div className="card action-plan-lg">
               <div className="card-hdr"><div className="card-icon">📊</div><div className="card-title">Action Plan</div></div>
               <div className="card-body">
                 {actionPlan.length===0?<div className="empty"><div className="empty-icon">📊</div><div className="empty-text">Chưa có action plan</div></div>:(
-                <table className="ap-table">
+                <table className="ap-table-lg">
                   <thead><tr><th>Date</th><th>Phenomenon</th><th>Rootcause</th><th>Action</th><th>PIC</th><th>Status</th></tr></thead>
                   <tbody>{actionPlan.map(a=>(
                     <tr key={a.id}>
@@ -297,24 +323,6 @@ export default function Dashboard() {
                       <td><span className={`ap-status ${a.status==='Open'?'open':'done'}`}>{a.status}</span></td>
                     </tr>))}</tbody>
                 </table>)}
-              </div>
-            </div>
-
-            {/* Bottom: Plan + Shift */}
-            <div className="s2-bottom" style={{gridColumn:'1/-1'}}>
-              <div className="card production-plan">
-                <div className="card-hdr"><div className="card-icon">📋</div><div className="card-title">Kế Hoạch SX Tuần</div></div>
-                <div className="card-body">
-                  {productionPlan?.image_url?<div className="img-placeholder"><img src={productionPlan.image_url.startsWith('/')?BACKEND+productionPlan.image_url:productionPlan.image_url} alt="Plan"/></div>:
-                  <div className="img-placeholder"><div className="img-ph-icon">📋</div><span>Chưa có hình</span></div>}
-                </div>
-              </div>
-              <div className="card shift-schedule">
-                <div className="card-hdr"><div className="card-icon">🕐</div><div className="card-title">Phân Ca / Shift</div></div>
-                <div className="card-body">
-                  {shiftSchedule?.image_url?<div className="img-placeholder"><img src={shiftSchedule.image_url.startsWith('/')?BACKEND+shiftSchedule.image_url:shiftSchedule.image_url} alt="Shift"/></div>:
-                  <div className="img-placeholder"><div className="img-ph-icon">🕐</div><span>Chưa có hình</span></div>}
-                </div>
               </div>
             </div>
           </div>

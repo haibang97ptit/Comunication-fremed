@@ -210,14 +210,16 @@ export default function Dashboard() {
             </div>
 
             {/* Monthly Star */}
-            <div className="card monthly-star" style={{gridRow:'1/-1'}}>
+            <div className="card monthly-star">
               <div className="card-hdr"><div className="card-icon">⭐</div><div className="card-title">Ngôi Sao Tháng / Monthly Star</div></div>
               <div className="card-body">
                 {monthlyStar?(
                   <div className="star-content">
                     {monthlyStar.employee_image?<img src={monthlyStar.employee_image.startsWith('/')?BACKEND+monthlyStar.employee_image:monthlyStar.employee_image} alt="" className="star-photo"/>:<div className="star-photo-placeholder">👤</div>}
-                    <div className="star-name">{monthlyStar.employee_name||'Chưa có tên'}</div>
-                    <div className="star-desc">{monthlyStar.content}</div>
+                    <div className="star-info">
+                      <div className="star-name">{monthlyStar.employee_name||'Chưa có tên'}</div>
+                      <div className="star-desc">{monthlyStar.content}</div>
+                    </div>
                   </div>
                 ):<div className="empty"><div className="empty-icon">⭐</div><div className="empty-text">Chưa có ngôi sao tháng</div></div>}
               </div>
@@ -243,6 +245,15 @@ export default function Dashboard() {
                     <div className="prob-desc">{p.description}</div>
                     <div className="prob-meta"><DeptTag by={p.reported_by}/>{p.created_at&&new Date(p.created_at).toLocaleString('vi-VN')}</div>
                   </div>))}
+              </div>
+            </div>
+
+            {/* Release COA */}
+            <div className="card release-coa">
+              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Ban Hành COA</div></div>
+              <div className="card-body">
+                {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:
+                coa.map(c=><div key={c.id} className="coa-item"><DeptTag by={c.created_by}/>{c.content}</div>)}
               </div>
             </div>
 
@@ -289,7 +300,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Bottom: Plan + Shift + COA */}
+            {/* Bottom: Plan + Shift */}
             <div className="s2-bottom" style={{gridColumn:'1/-1'}}>
               <div className="card production-plan">
                 <div className="card-hdr"><div className="card-icon">📋</div><div className="card-title">Kế Hoạch SX Tuần</div></div>
@@ -303,13 +314,6 @@ export default function Dashboard() {
                 <div className="card-body">
                   {shiftSchedule?.image_url?<div className="img-placeholder"><img src={shiftSchedule.image_url.startsWith('/')?BACKEND+shiftSchedule.image_url:shiftSchedule.image_url} alt="Shift"/></div>:
                   <div className="img-placeholder"><div className="img-ph-icon">🕐</div><span>Chưa có hình</span></div>}
-                </div>
-              </div>
-              <div className="card release-coa">
-                <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Ban Hành COA</div></div>
-                <div className="card-body">
-                  {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:
-                  coa.map(c=><div key={c.id} className="coa-item"><DeptTag by={c.created_by}/>{c.content}</div>)}
                 </div>
               </div>
             </div>

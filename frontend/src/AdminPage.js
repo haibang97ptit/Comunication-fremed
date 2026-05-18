@@ -118,7 +118,7 @@ export default function AdminPage({role}){
 
   // ADMIN PAGE
   return(
-    <div className="admin-page" style={{position:'fixed',top:0,left:0,right:0,bottom:0,overflowY:'scroll',zIndex:99999,background:'#0a1628'}}>
+    <div className="admin-page" style={{position:'fixed',top:0,left:0,right:0,bottom:0,overflowY:'scroll',zIndex:99999,background:'var(--bg-primary)'}}>
       {toast&&<Toast message={toast.message} type={toast.type} onClose={()=>setToast(null)}/>}
       <div className="admin-hdr">
         <div className="admin-hdr-left">
@@ -190,6 +190,16 @@ export default function AdminPage({role}){
               <button className="ex-item-btn archive" onClick={()=>archive('/others',o.id,others,setOthers,'mục khác')}>📦 Lưu trữ</button></div>)}</div>}
         </Sec>
 
+        {/* Release COA (all roles) */}
+        <Sec icon="📄" bg="rgba(139,92,246,.12)" color="var(--accent-purple)" title="Ban Hành COA / Release COA">
+          <div className="f-row full"><div className="f-group"><div className="f-label">Nội dung COA</div>
+            <textarea className="f-textarea" placeholder="Nhập nội dung COA..." value={newCoa} onChange={e=>setNewCoa(e.target.value)}/></div></div>
+          <div className="f-actions"><button className="btn primary" onClick={submitCoa}>📄 Thêm COA</button></div>
+          {coa.length>0&&<div className="ex-items"><div className="ex-title">Đang hiển thị ({coa.length})</div>
+            {coa.map(c=><div key={c.id} className="ex-item"><div className="ex-item-content">{c.content}</div>
+              <button className="ex-item-btn archive" onClick={()=>archive('/coa',c.id,coa,setCoa,'COA')}>📦 Lưu trữ</button></div>)}</div>}
+        </Sec>
+
         {/* ===== PAGE 2 SECTIONS (PD only) ===== */}
         {isPD&&<>
           <div style={{borderTop:'2px solid var(--accent-cyan)',margin:'8px 0',paddingTop:8}}>
@@ -243,16 +253,6 @@ export default function AdminPage({role}){
               <div className="f-group"><div className="f-label">Ghi chú</div>
               <textarea className="f-textarea" value={shiftForm.notes} onChange={e=>setShiftForm(p=>({...p,notes:e.target.value}))}/></div></div>
             <div className="f-actions"><button className="btn primary" onClick={submitShift}>🕐 Cập Nhật</button></div>
-          </Sec>
-
-          {/* Release COA */}
-          <Sec icon="📄" bg="rgba(139,92,246,.12)" color="var(--accent-purple)" title="Ban Hành COA / Release COA">
-            <div className="f-row full"><div className="f-group"><div className="f-label">Nội dung COA</div>
-              <textarea className="f-textarea" placeholder="Nhập nội dung COA..." value={newCoa} onChange={e=>setNewCoa(e.target.value)}/></div></div>
-            <div className="f-actions"><button className="btn primary" onClick={submitCoa}>📄 Thêm COA</button></div>
-            {coa.length>0&&<div className="ex-items"><div className="ex-title">Đang hiển thị ({coa.length})</div>
-              {coa.map(c=><div key={c.id} className="ex-item"><div className="ex-item-content">{c.content}</div>
-                <button className="ex-item-btn archive" onClick={()=>archive('/coa',c.id,coa,setCoa,'COA')}>📦 Lưu trữ</button></div>)}</div>}
           </Sec>
         </>}
 

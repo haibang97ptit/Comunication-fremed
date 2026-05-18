@@ -54,10 +54,14 @@ body { font-family: var(--font-main); background: var(--bg-primary); color: var(
 .conn-status.off .conn-dot { background:var(--accent-red); }
 @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-/* Slide indicators + countdown */
+/* Slide indicators + countdown + pause */
 .slide-indicators { display:flex; gap:5px; }
 .s-dot { width:7px; height:7px; border-radius:50%; background:var(--border-light); transition:.3s; }
 .s-dot.active { background:var(--accent-cyan); width:20px; border-radius:3px; box-shadow:0 0 6px var(--accent-cyan); }
+.pause-btn { width:32px; height:32px; border-radius:50%; border:1px solid var(--border-light); background:var(--bg-card); color:var(--text-primary); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.pause-btn:hover { border-color:var(--accent-cyan); background:rgba(6,182,212,.1); color:var(--accent-cyan); }
+.paused-label { font-size:10px; font-weight:700; color:var(--accent-yellow); letter-spacing:1px; padding:3px 8px; border-radius:4px; background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.25); animation:pauseBlink 1s infinite; }
+@keyframes pauseBlink { 0%,100%{opacity:1} 50%{opacity:.5} }
 .countdown-bar { height:2px; background:var(--border-color); flex-shrink:0; margin:0 20px; }
 .countdown-fill { height:100%; background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue)); transition:width .3s linear; }
 

@@ -61,6 +61,7 @@ function fmtTime(d) { return d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute
 
 export default function Dashboard() {
   const [slide, setSlide] = useState(1);
+  const [paused, setPaused] = useState(false);
   const [countdown, setCountdown] = useState(100);
   const [now, setNow] = useState(new Date());
   const [connected, setConnected] = useState(false);
@@ -137,12 +138,13 @@ export default function Dashboard() {
 
   // Auto slide
   useEffect(()=>{
+    if (paused) return;
     setCountdown(100);
     const start=Date.now();
     const ci=setInterval(()=>setCountdown(Math.max(0,100-(Date.now()-start)/SLIDE_INTERVAL*100)),100);
     const ti=setTimeout(()=>setSlide(p=>p===1?2:1),SLIDE_INTERVAL);
     return()=>{clearTimeout(ti);clearInterval(ci)};
-  },[slide]);
+  },[slide,paused]);
 
   const {kpi,actionPlan,goodNews,monthlyStar,announcements,productionPlan,shiftSchedule,problems,coa,others} = data;
   const BACKEND = SOCKET_URL;
@@ -181,7 +183,12 @@ export default function Dashboard() {
           <div><div className="dash-title">Thông Tin Sản Xuất</div><div className="dash-subtitle">Production Information</div></div>
         </div>
         <div className="dash-header-right">
-          <div className="slide-indicators"><div className={`s-dot ${slide===1?'active':''}`}/><div className={`s-dot ${slide===2?'active':''}`}/></div>
+          <button className="pause-btn" onClick={()=>setPaused(p=>!p)} title={paused?'Tiếp tục':'Tạm dừng'}>{paused?'▶':'⏸'}</button>
+          <div className="slide-indicators">
+            <div className={`s-dot ${slide===1?'active':''}`} onClick={()=>setSlide(1)} style={{cursor:'pointer'}}/>
+            <div className={`s-dot ${slide===2?'active':''}`} onClick={()=>setSlide(2)} style={{cursor:'pointer'}}/>
+          </div>
+          {paused&&<span className="paused-label">TẠM DỪNG</span>}
           <div className="dash-date">{fmtDate(now)}</div>
           <div className="dash-time">{fmtTime(now)}</div>
           <div className={`conn-status ${connected?'on':'off'}`}><div className="conn-dot"/>{connected?'ONLINE':'OFFLINE'}</div>

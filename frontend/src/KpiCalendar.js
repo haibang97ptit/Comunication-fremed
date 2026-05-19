@@ -111,9 +111,9 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
       <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle"
         fontSize={28} fontWeight={900} fill="white">{cfg.label}</text>
       <text x={cx} y={cy + 8} textAnchor="middle" dominantBaseline="middle"
-        fontSize={6} fontWeight={700} fill="rgba(255,255,255,0.9)" letterSpacing="1">{cfg.fullName}</text>
+        fontSize={10} fontWeight={900} fill="rgba(255,255,255,0.9)" letterSpacing="1">{cfg.fullName}</text>
       <text x={cx} y={cy + 18} textAnchor="middle" dominantBaseline="middle"
-        fontSize={6} fontWeight={600} fill="rgba(255,255,255,0.7)">{MONTH_EN[m]} {y}</text>
+        fontSize={8} fontWeight={900} fill="rgba(255,255,255,0.7)">{MONTH_EN[m]} {y}</text>
 
       {/* Legend */}
       <g transform={`translate(10, ${size - 14})`}>

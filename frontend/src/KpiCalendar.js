@@ -123,10 +123,10 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
         <text x={41} y={7} fontSize={6} fill="var(--text-muted)">K.Đạt</text>
       </g>
       <g transform={`translate(${size - 95}, ${size - 14})`}>
-        <rect x={0} y={1} width={14} height={6} rx={1} fill="none" stroke="var(--text-muted)" strokeWidth={0.8} />
+        {/* <rect x={0} y={1} width={14} height={6} rx={1} fill="none" stroke="var(--text-muted)" strokeWidth={0.8} /> */}
         <text x={17} y={7} fontSize={6} fill="var(--text-muted)">Ngoài: Ca 1</text>
-        <rect x={55} y={2} width={10} height={4} rx={1} fill="none" stroke="var(--text-muted)" strokeWidth={0.8} />
-        <text x={68} y={7} fontSize={6} fill="var(--text-muted)">Trong: Ca 2</text>
+        {/* <rect x={55} y={2} width={10} height={4} rx={1} fill="none" stroke="var(--text-muted)" strokeWidth={0.8} /> */}
+        <text x={56} y={7} fontSize={6} fill="var(--text-muted)">Trong: Ca 2</text>
       </g>
     </svg>
   );

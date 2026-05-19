@@ -32,7 +32,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // =============================================
 // AUTH - Password cứng
 // =============================================
-const PASSWORDS = { pd: 'pd2024', qc: 'qc2024', qa: 'qa2024' };
+const PASSWORDS = { pd: 'pdadmin@2026', qc: 'adminqa@2026', qa: 'admin-qc@2026' };
 
 app.post('/api/auth', (req, res) => {
   const { role, password } = req.body;

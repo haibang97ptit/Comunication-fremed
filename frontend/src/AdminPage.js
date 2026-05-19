@@ -182,7 +182,7 @@ export default function AdminPage({role}){
         <Sec bg="rgba(239,68,68,.12)" color="var(--accent-red)" title="Báo Cáo Sự Cố / New Problem" open>
           <div className="f-row"><div className="f-group"><div className="f-label">Bộ phận</div>
             <select className="f-select" value={probForm.department} onChange={e=>setProbForm(p=>({...p,department:e.target.value}))}>
-              <option value="">-- Chọn --</option><option>Sản xuất</option><option>Chất lượng</option><option>Kế hoạch</option><option>Kỹ thuật</option><option>Kho vận</option><option>Khác</option>
+              <option value="">-- Chọn --</option><option>PD</option><option>QC</option><option>QA</option>
             </select></div>
             <div className="f-group"><div className="f-label">Mức độ</div><div className="sev-sel">
               {['info','warning','critical'].map(s=><button key={s} className={`sev-opt ${s} ${probForm.severity===s?'active':''}`}
@@ -284,7 +284,7 @@ export default function AdminPage({role}){
           ))}
 
           {/* Daily KPI */}
-          <Sec bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title="Daily KPI (Upload hình)" open>
+          {/* <Sec bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title="Daily KPI (Upload hình)" open>
             <div className="kpi-grid">
               {['safety','quality','delivery','cost'].map(t=>(
                 <div key={t} className={`kpi-input-card ${t}`}>
@@ -294,7 +294,7 @@ export default function AdminPage({role}){
                   <button className="btn primary" style={{width:'100%'}} onClick={()=>submitKpi(t)}>Lưu {t.toUpperCase()}</button>
                 </div>))}
             </div>
-          </Sec>
+          </Sec> */}
 
           {/* Action Plan */}
           <Sec bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title="Action Plan">
@@ -319,29 +319,29 @@ export default function AdminPage({role}){
           </Sec>
 
           {/* Production Plan */}
-          <Sec bg="rgba(6,182,212,.12)" color="var(--accent-cyan)" title="Kế Hoạch SX Tuần">
+          {/* <Sec bg="rgba(6,182,212,.12)" color="var(--accent-cyan)" title="Kế Hoạch SX Tuần">
             <div className="f-row"><div className="f-group"><div className="f-label">Hình kế hoạch</div>
               <FileUpload value={planForm.image_url} onChange={url=>setPlanForm(p=>({...p,image_url:url}))}/></div>
               <div className="f-group"><div className="f-label">Ghi chú</div>
               <textarea className="f-textarea" value={planForm.notes} onChange={e=>setPlanForm(p=>({...p,notes:e.target.value}))}/></div></div>
             <div className="f-actions"><button className="btn primary" onClick={submitPlan}>Cập Nhật</button></div>
-          </Sec>
+          </Sec> */}
 
           {/* Shift Schedule */}
-          <Sec bg="rgba(249,115,22,.12)" color="var(--accent-orange)" title="Phân Ca / Shift Schedule">
+          {/* <Sec bg="rgba(249,115,22,.12)" color="var(--accent-orange)" title="Phân Ca / Shift Schedule">
             <div className="f-row"><div className="f-group"><div className="f-label">Hình phân ca</div>
               <FileUpload value={shiftForm.image_url} onChange={url=>setShiftForm(p=>({...p,image_url:url}))}/></div>
               <div className="f-group"><div className="f-label">Ghi chú</div>
               <textarea className="f-textarea" value={shiftForm.notes} onChange={e=>setShiftForm(p=>({...p,notes:e.target.value}))}/></div></div>
             <div className="f-actions"><button className="btn primary" onClick={submitShift}>Cập Nhật</button></div>
-          </Sec>
+          </Sec> */}
         </>}
 
         {/* Archive All */}
-        <div className="archive-all-section">
+        {/* <div className="archive-all-section">
           <p>Lưu trữ tất cả nội dung hiện tại (để bắt đầu ngày mới)</p>
           <button className="btn danger" onClick={archiveAll}>Kết Thúc Ngày — Lưu Trữ Tất Cả</button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -298,7 +298,7 @@ export default function Dashboard() {
           <div className="s2-grid-v2">
             {/* Daily KPI section with header */}
             <div className="card kpi-section">
-              <div className="card-hdr"><div className="card-icon" style={{background:'rgba(59,130,246,.15)',color:'var(--accent-blue)'}}>📊</div><div className="card-title" style={{color:'var(--accent-blue)'}}>Daily KPI</div><span className="kpi-legend">Vòng ngoài: Ca 1 — Vòng trong: Ca 2</span></div>
+              <div className="card-hdr"><div className="card-icon" style={{background:'rgba(59,130,246,.15)',color:'var(--accent-blue)'}}>📊</div><div className="card-title" style={{color:'var(--accent-blue)'}}>Daily KPI</div></div>
               <div className="kpi-row-inner">
                 {['safety','quality','delivery','cost'].map(t=>(
                   <div key={t} className={`kpi-card-lg ${t} kpi-calendar-card`}>

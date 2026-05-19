@@ -66,7 +66,7 @@ export default function Dashboard() {
   const [countdown, setCountdown] = useState(100);
   const [now, setNow] = useState(new Date());
   const [connected, setConnected] = useState(false);
-  const [data, setData] = useState({ kpi:[], actionPlan:[], goodNews:[], monthlyStar:null, announcements:[], productionPlan:null, shiftSchedule:null, problems:[], coa:[], others:[], kpiCalendar:[] });
+  const [data, setData] = useState({ kpi:[], actionPlan:[], goodNews:[], monthlyStar:[], announcements:[], productionPlan:null, shiftSchedule:null, problems:[], coa:[], others:[], kpiCalendar:[] });
   const [critAlert, setCritAlert] = useState(null);
   const [pageShake, setPageShake] = useState(false);
   const [flashIds, setFlashIds] = useState(new Set());
@@ -118,7 +118,8 @@ export default function Dashboard() {
     s.on('action_plan-archived',ap=>setData(p=>({...p,actionPlan:p.actionPlan.filter(a=>a.id!==ap.id)})));
     s.on('good-news-added',n=>{setData(p=>({...p,goodNews:[n,...p.goodNews]}));showNotif('good-news-added',n)});
     s.on('good_news-archived',n=>setData(p=>({...p,goodNews:p.goodNews.filter(x=>x.id!==n.id)})));
-    s.on('monthly-star-updated',ms=>{setData(p=>({...p,monthlyStar:ms}));showNotif('monthly-star-updated',ms)});
+    s.on('monthly-star-added',ms=>{setData(p=>({...p,monthlyStar:[ms,...p.monthlyStar]}));showNotif('monthly-star-updated',ms)});
+    s.on('monthly_star-archived',ms=>setData(p=>({...p,monthlyStar:p.monthlyStar.filter(x=>x.id!==ms.id)})));
     s.on('announcement-added',a=>{setData(p=>({...p,announcements:[a,...p.announcements]}));showNotif('announcement-added',a)});
     s.on('announcements-archived',a=>setData(p=>({...p,announcements:p.announcements.filter(x=>x.id!==a.id)})));
     s.on('production-plan-updated',pp=>{setData(p=>({...p,productionPlan:pp}));showNotif('production-plan-updated',pp)});
@@ -138,7 +139,7 @@ export default function Dashboard() {
           :[...p.kpiCalendar,entry]
       }));
     });
-    s.on('all-archived',()=>setData(p=>({...p,kpi:[],actionPlan:[],goodNews:[],monthlyStar:null,announcements:[],productionPlan:null,shiftSchedule:null,problems:[],coa:[],others:[]})));
+    s.on('all-archived',()=>setData(p=>({...p,kpi:[],actionPlan:[],goodNews:[],monthlyStar:[],announcements:[],productionPlan:null,shiftSchedule:null,problems:[],coa:[],others:[]})));
     return()=>s.disconnect();
   },[triggerCritical,showNotif]);
 
@@ -189,7 +190,7 @@ export default function Dashboard() {
       <div className="dash-header">
         <div className="dash-header-left">
           <div className="dash-logo">PI</div>
-          <div><div className="dash-title">Thông Tin Sản Xuất</div><div className="dash-subtitle">Production Information</div></div>
+          <div className="dash-title">Dashboard</div>
         </div>
         <div className="dash-header-right">
           <button className="pause-btn" onClick={()=>setPaused(p=>!p)} title={paused?'Tiếp tục':'Tạm dừng'}>{paused?'▶':'⏸'}</button>
@@ -226,44 +227,22 @@ export default function Dashboard() {
             <div className="card monthly-star">
               <div className="card-hdr"><div className="card-icon">⭐</div><div className="card-title">Ngôi Sao Tháng / Monthly Star</div></div>
               <div className="card-body">
-                {monthlyStar?(
-                  <div className="star-content">
-                    {monthlyStar.employee_image?<img src={monthlyStar.employee_image.startsWith('/')?BACKEND+monthlyStar.employee_image:monthlyStar.employee_image} alt="" className="star-photo"/>:<div className="star-photo-placeholder">👤</div>}
+                {monthlyStar.length===0?<div className="empty"><div className="empty-icon">⭐</div><div className="empty-text">Chưa có ngôi sao tháng</div></div>:
+                monthlyStar.map(ms=>(
+                  <div key={ms.id} className="star-item">
+                    {ms.employee_image?<img src={ms.employee_image.startsWith('/')?BACKEND+ms.employee_image:ms.employee_image} alt="" className="star-photo"/>:<div className="star-photo-placeholder">👤</div>}
                     <div className="star-info">
-                      <div className="star-name">{monthlyStar.employee_name||'Chưa có tên'}</div>
-                      <div className="star-desc">{monthlyStar.content}</div>
+                      <div className="star-name">{ms.employee_name||'Chưa có tên'}</div>
+                      <div className="star-desc">{ms.content}</div>
                     </div>
                   </div>
-                ):<div className="empty"><div className="empty-icon">⭐</div><div className="empty-text">Chưa có ngôi sao tháng</div></div>}
+                ))}
               </div>
             </div>
 
-            {/* Announcements */}
-            <div className="card announcements">
-              <div className="card-hdr"><div className="card-icon">📢</div><div className="card-title">Thông Báo / Announce</div></div>
-              <div className="card-body">
-                {announcements.length===0?<div className="empty"><div className="empty-icon">📢</div><div className="empty-text">Chưa có thông báo</div></div>:
-                announcements.map(a=><div key={a.id} className="ann-item"><DeptTag by={a.created_by}/>{a.content}</div>)}
-              </div>
-            </div>
-
-            {/* New Problems */}
-            <div className="card new-problems">
-              <div className="card-hdr"><div className="card-icon">🚨</div><div className="card-title">Sự cố / New Problem</div></div>
-              <div className="card-body">
-                {problems.length===0?<div className="empty"><div className="empty-icon">✅</div><div className="empty-text">Không có sự cố</div></div>:
-                problems.map(p=>(
-                  <div key={p.id} className={`prob-item sev-${p.severity} ${flashIds.has(p.id)?'flash':''}`}>
-                    <div className="prob-hdr"><span className="prob-dept">{p.department}</span><span className={`prob-badge ${p.severity}`}>{p.severity==='critical'?'🚨 CRITICAL':p.severity.toUpperCase()}</span></div>
-                    <div className="prob-desc">{p.description}</div>
-                    <div className="prob-meta"><DeptTag by={p.reported_by}/>{p.created_at&&new Date(p.created_at).toLocaleString('vi-VN')}</div>
-                  </div>))}
-              </div>
-            </div>
-
-            {/* Release COA */}
+            {/* Row 1 pos 3: Release COA */}
             <div className="card release-coa">
-              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Kế Hoạch CoA / CoA Plan</div></div>
+              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Kế Hoạch CoA</div></div>
               <div className="card-body">
                 {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:(
                 <table className="coa-table">
@@ -280,7 +259,30 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Others */}
+            {/* Row 2 pos 1: Announcements */}
+            <div className="card announcements">
+              <div className="card-hdr"><div className="card-icon">📢</div><div className="card-title">Thông Báo / Announce</div></div>
+              <div className="card-body">
+                {announcements.length===0?<div className="empty"><div className="empty-icon">📢</div><div className="empty-text">Chưa có thông báo</div></div>:
+                announcements.map(a=><div key={a.id} className="ann-item"><DeptTag by={a.created_by}/>{a.content}</div>)}
+              </div>
+            </div>
+
+            {/* Row 2 pos 2: New Problems */}
+            <div className="card new-problems">
+              <div className="card-hdr"><div className="card-icon">🚨</div><div className="card-title">New Problem</div></div>
+              <div className="card-body">
+                {problems.length===0?<div className="empty"><div className="empty-icon">✅</div><div className="empty-text">Không có sự cố</div></div>:
+                problems.map(p=>(
+                  <div key={p.id} className={`prob-item sev-${p.severity} ${flashIds.has(p.id)?'flash':''}`}>
+                    <div className="prob-hdr"><span className="prob-dept">{p.department}</span><span className={`prob-badge ${p.severity}`}>{p.severity==='critical'?'🚨 CRITICAL':p.severity.toUpperCase()}</span></div>
+                    <div className="prob-desc">{p.description}</div>
+                    <div className="prob-meta"><DeptTag by={p.reported_by}/>{p.created_at&&new Date(p.created_at).toLocaleString('vi-VN')}</div>
+                  </div>))}
+              </div>
+            </div>
+
+            {/* Row 2 pos 3: Others */}
             <div className="card others">
               <div className="card-hdr"><div className="card-icon">📋</div><div className="card-title">Khác / Others</div></div>
               <div className="card-body">
@@ -294,28 +296,35 @@ export default function Dashboard() {
         {/* ===== SLIDE 2: Production ===== */}
         <div className="slide">
           <div className="s2-grid-v2">
-            {/* KPI row - 4 vòng tròn calendar */}
-            <div className="kpi-row">
-              {['safety','quality','delivery','cost'].map(t=>(
-                <div key={t} className={`kpi-card-lg ${t} kpi-calendar-card`}>
-                  <KpiCalendar type={t} data={kpiCalendar}/>
-                </div>
-              ))}
+            {/* Daily KPI section with header */}
+            <div className="card kpi-section">
+              <div className="card-hdr"><div className="card-icon" style={{background:'rgba(59,130,246,.15)',color:'var(--accent-blue)'}}>📊</div><div className="card-title" style={{color:'var(--accent-blue)'}}>Daily KPI</div><span className="kpi-legend">Vòng ngoài: Ca 1 — Vòng trong: Ca 2</span></div>
+              <div className="kpi-row-inner">
+                {['safety','quality','delivery','cost'].map(t=>(
+                  <div key={t} className={`kpi-card-lg ${t} kpi-calendar-card`}>
+                    <KpiCalendar type={t} data={kpiCalendar}/>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Action Plan - full width */}
+            {/* Action Plan - full width with KPI column */}
             <div className="card action-plan-lg">
               <div className="card-hdr"><div className="card-icon">📊</div><div className="card-title">Action Plan</div></div>
               <div className="card-body">
                 {actionPlan.length===0?<div className="empty"><div className="empty-icon">📊</div><div className="empty-text">Chưa có action plan</div></div>:(
                 <table className="ap-table-lg">
-                  <thead><tr><th>Date</th><th>Phenomenon</th><th>Rootcause</th><th>Action</th><th>PIC</th><th>Status</th></tr></thead>
-                  <tbody>{actionPlan.map(a=>(
+                  <thead><tr><th>Date</th><th>KPI</th><th>Phenomenon</th><th>Rootcause</th><th>Action</th><th>PIC</th><th>Status</th></tr></thead>
+                  <tbody>{actionPlan.map(a=>{
+                    const kpiCfg={Safety:{color:'#b91c1c',bg:'rgba(185,28,28,.12)'},Quality:{color:'#059669',bg:'rgba(5,150,105,.12)'},Delivery:{color:'#2563eb',bg:'rgba(37,99,235,.12)'},Cost:{color:'#ca8a04',bg:'rgba(202,138,4,.12)'}};
+                    const kc=kpiCfg[a.kpi_topic];
+                    return(
                     <tr key={a.id}>
                       <td>{a.date&&new Date(a.date).toLocaleDateString('vi-VN')}</td>
+                      <td>{kc?<span className="ap-kpi-tag blink" style={{background:kc.bg,color:kc.color,borderColor:kc.color}}>{a.kpi_topic}</span>:'—'}</td>
                       <td>{a.phenomenon}</td><td>{a.rootcause}</td><td>{a.action}</td><td>{a.pic}</td>
                       <td><span className={`ap-status ${a.status==='Open'?'open':'done'}`}>{a.status}</span></td>
-                    </tr>))}</tbody>
+                    </tr>)})}</tbody>
                 </table>)}
               </div>
             </div>

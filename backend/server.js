@@ -53,7 +53,7 @@ app.get('/api/dashboard', async (req, res) => {
       pool.query('SELECT * FROM daily_kpi WHERE date=$1 AND archived=false', [today]),
       pool.query('SELECT * FROM action_plan WHERE archived=false ORDER BY date DESC, created_at DESC LIMIT 20'),
       pool.query('SELECT * FROM good_news WHERE archived=false ORDER BY created_at DESC LIMIT 20'),
-      pool.query('SELECT * FROM monthly_star WHERE month=$1 AND year=$2 AND archived=false LIMIT 1', [now.getMonth()+1, now.getFullYear()]),
+      pool.query('SELECT * FROM monthly_star WHERE month=$1 AND year=$2 AND archived=false ORDER BY created_at DESC', [now.getMonth()+1, now.getFullYear()]),
       pool.query('SELECT * FROM announcements WHERE archived=false ORDER BY created_at DESC LIMIT 20'),
       pool.query('SELECT * FROM weekly_production_plan WHERE archived=false ORDER BY updated_at DESC LIMIT 1'),
       pool.query('SELECT * FROM shift_schedule WHERE date=$1 AND archived=false LIMIT 1', [today]),
@@ -64,7 +64,7 @@ app.get('/api/dashboard', async (req, res) => {
     ]);
     res.json({
       kpi: kpi.rows, actionPlan: actionPlan.rows, goodNews: goodNews.rows,
-      monthlyStar: monthlyStar.rows[0]||null, announcements: announcements.rows,
+      monthlyStar: monthlyStar.rows, announcements: announcements.rows,
       productionPlan: productionPlan.rows[0]||null, shiftSchedule: shiftSchedule.rows[0]||null,
       problems: problems.rows, coa: coa.rows, others: others.rows, kpiCalendar: kpiCalendar.rows,
     });
@@ -145,10 +145,10 @@ app.get('/api/action-plan', async (req, res) => {
 
 app.post('/api/action-plan', async (req, res) => {
   try {
-    const { date, phenomenon, rootcause, action, pic, status, created_by } = req.body;
+    const { date, kpi_topic, phenomenon, rootcause, action, pic, status, created_by } = req.body;
     const r = await pool.query(
-      'INSERT INTO action_plan(date,phenomenon,rootcause,action,pic,status,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-      [date||new Date().toISOString().split('T')[0], phenomenon, rootcause, action, pic, status||'Open', created_by]);
+      'INSERT INTO action_plan(date,kpi_topic,phenomenon,rootcause,action,pic,status,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+      [date||new Date().toISOString().split('T')[0], kpi_topic||null, phenomenon, rootcause, action, pic, status||'Open', created_by]);
     io.emit('action-plan-added', r.rows[0]);
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -156,10 +156,10 @@ app.post('/api/action-plan', async (req, res) => {
 
 app.put('/api/action-plan/:id', async (req, res) => {
   try {
-    const { phenomenon, rootcause, action, pic, status } = req.body;
+    const { kpi_topic, phenomenon, rootcause, action, pic, status } = req.body;
     const r = await pool.query(
-      'UPDATE action_plan SET phenomenon=COALESCE($1,phenomenon),rootcause=COALESCE($2,rootcause),action=COALESCE($3,action),pic=COALESCE($4,pic),status=COALESCE($5,status) WHERE id=$6 RETURNING *',
-      [phenomenon, rootcause, action, pic, status, req.params.id]);
+      'UPDATE action_plan SET kpi_topic=COALESCE($1,kpi_topic),phenomenon=COALESCE($2,phenomenon),rootcause=COALESCE($3,rootcause),action=COALESCE($4,action),pic=COALESCE($5,pic),status=COALESCE($6,status) WHERE id=$7 RETURNING *',
+      [kpi_topic, phenomenon, rootcause, action, pic, status, req.params.id]);
     io.emit('action-plan-updated', r.rows[0]);
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -185,22 +185,22 @@ app.put('/api/good-news/:id/archive', archiveItem('good_news'));
 // --- Monthly Star ---
 app.get('/api/monthly-star', async (req, res) => {
   try {
-    const r = await pool.query('SELECT * FROM monthly_star WHERE month=EXTRACT(MONTH FROM CURRENT_DATE) AND year=EXTRACT(YEAR FROM CURRENT_DATE) AND archived=false LIMIT 1');
-    res.json(r.rows[0]||null);
+    const r = await pool.query('SELECT * FROM monthly_star WHERE month=EXTRACT(MONTH FROM CURRENT_DATE) AND year=EXTRACT(YEAR FROM CURRENT_DATE) AND archived=false ORDER BY created_at DESC');
+    res.json(r.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
-app.put('/api/monthly-star', async (req, res) => {
+app.post('/api/monthly-star', async (req, res) => {
   try {
     const { employee_name, employee_image, content, created_by } = req.body;
     const now = new Date();
     const r = await pool.query(
-      `INSERT INTO monthly_star(month,year,employee_name,employee_image,content,created_by) VALUES($1,$2,$3,$4,$5,$6)
-       ON CONFLICT(month,year) DO UPDATE SET employee_name=$3,employee_image=COALESCE($4,monthly_star.employee_image),content=$5,created_by=$6 RETURNING *`,
+      'INSERT INTO monthly_star(month,year,employee_name,employee_image,content,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
       [now.getMonth()+1, now.getFullYear(), employee_name, employee_image, content, created_by]);
-    io.emit('monthly-star-updated', r.rows[0]);
+    io.emit('monthly-star-added', r.rows[0]);
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+app.put('/api/monthly-star/:id/archive', archiveItem('monthly_star'));
 
 // --- Announcements ---
 app.get('/api/announcements', async (req, res) => {

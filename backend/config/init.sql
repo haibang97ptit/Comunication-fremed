@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS kpi_calendar (
 CREATE TABLE IF NOT EXISTS action_plan (
     id SERIAL PRIMARY KEY,
     date DATE NOT NULL DEFAULT CURRENT_DATE,
+    kpi_topic VARCHAR(20) CHECK (kpi_topic IN ('Safety', 'Quality', 'Delivery', 'Cost')),
     phenomenon TEXT NOT NULL,
     rootcause TEXT,
     action TEXT,
@@ -62,8 +63,7 @@ CREATE TABLE IF NOT EXISTS monthly_star (
     content TEXT NOT NULL,
     created_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    archived BOOLEAN DEFAULT FALSE,
-    UNIQUE(month, year)
+    archived BOOLEAN DEFAULT FALSE
 );
 
 -- Bảng Thông báo / Announcements
@@ -147,7 +147,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO monthly_star (month, year, employee_name, content, created_by) VALUES
     (EXTRACT(MONTH FROM CURRENT_DATE)::INTEGER, EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER,
      'Nguyễn Văn A', 'Đã phát hiện Hồ sơ lô sai thông tin mã số bộ khuôn lắp đặt máy ép vì....', 'QA')
-ON CONFLICT (month, year) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 INSERT INTO announcements (content, created_by) VALUES
     ('Không mang điện thoại di động vào khu vực sản xuất', 'QA')
@@ -157,8 +157,8 @@ INSERT INTO problems (department, description, severity, reported_by) VALUES
     ('Kế hoạch', 'Tốc độ sản xuất hiện tại không kịp tiến độ giao hàng cho thị trường đối với sản phẩm A, B, C', 'critical', 'PD')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO action_plan (date, phenomenon, rootcause, action, pic, status, created_by) VALUES
-    (CURRENT_DATE, 'Máy ép #3 dừng đột ngột', 'Hỏng sensor nhiệt', 'Thay sensor mới', 'Trần Văn B', 'Open', 'PD')
+INSERT INTO action_plan (date, kpi_topic, phenomenon, rootcause, action, pic, status, created_by) VALUES
+    (CURRENT_DATE, 'Quality', 'Máy ép #3 dừng đột ngột', 'Hỏng sensor nhiệt', 'Thay sensor mới', 'Trần Văn B', 'Open', 'PD')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO release_coa (product, batch_number, stage, submit_coa, approve_coa, created_by) VALUES

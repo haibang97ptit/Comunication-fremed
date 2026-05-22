@@ -136,38 +136,5 @@ CREATE TABLE IF NOT EXISTS others (
 );
 
 -- =============================================
--- DỮ LIỆU MẪU
+-- KHÔNG CÓ DỮ LIỆU MẪU - DB TRỐNG KHI KHỞI TẠO
 -- =============================================
-
-INSERT INTO good_news (content, created_by) VALUES
-    ('Sản phẩm A, B được vào danh mục bảo hiểm của các bệnh viện', 'QC'),
-    ('Giai đoạn pha chế A, B đã hoàn thành được 1 lô trong 1 ca', 'PD')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO monthly_star (month, year, employee_name, content, created_by) VALUES
-    (EXTRACT(MONTH FROM CURRENT_DATE)::INTEGER, EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER,
-     'Nguyễn Văn A', 'Đã phát hiện Hồ sơ lô sai thông tin mã số bộ khuôn lắp đặt máy ép vì....', 'QA')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO announcements (content, created_by) VALUES
-    ('Không mang điện thoại di động vào khu vực sản xuất', 'QA')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO problems (department, description, severity, reported_by) VALUES
-    ('Kế hoạch', 'Tốc độ sản xuất hiện tại không kịp tiến độ giao hàng cho thị trường đối với sản phẩm A, B, C', 'critical', 'PD')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO action_plan (date, kpi_topic, phenomenon, rootcause, action, pic, status, created_by) VALUES
-    (CURRENT_DATE, 'Quality', 'Máy ép #3 dừng đột ngột', 'Hỏng sensor nhiệt', 'Thay sensor mới', 'Trần Văn B', 'Open', 'PD')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO release_coa (product, batch_number, stage, submit_coa, approve_coa, created_by) VALUES
-    ('TIDILON FORTE', '260122', 'Granulation', '9h- 18/05/2026', '10h- 18/05/2026', 'PD'),
-    ('TIDILON FORTE', '260123', 'Granulation', '9h- 18/05/2026', '10h- 18/05/2026', 'PD'),
-    ('CONTISOR 5', '260133', 'Granulation', '', '', 'PD'),
-    ('FREBAMOL 400/500', '260120', 'Coated', '11h- 19/05/2026', '12h- 19/05/2026', 'PD')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO others (content, created_by) VALUES
-    ('Lịch bảo trì máy móc định kỳ tháng 5', 'QC')
-ON CONFLICT DO NOTHING;

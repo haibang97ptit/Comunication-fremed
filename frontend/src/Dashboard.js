@@ -242,7 +242,7 @@ export default function Dashboard() {
 
             {/* Row 1 pos 3: Release COA */}
             <div className="card release-coa">
-              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Kế Hoạch CoA</div></div>
+              <div className="card-hdr"><div className="card-icon">📄</div><div className="card-title">Kế Hoạch CoA / CoA Plan</div></div>
               <div className="card-body">
                 {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:(
                 <table className="coa-table">
@@ -270,7 +270,7 @@ export default function Dashboard() {
 
             {/* Row 2 pos 2: New Problems */}
             <div className="card new-problems">
-              <div className="card-hdr"><div className="card-icon">🚨</div><div className="card-title">New Problem</div></div>
+              <div className="card-hdr"><div className="card-icon">🚨</div><div className="card-title">Sự cố / New Problem</div></div>
               <div className="card-body">
                 {problems.length===0?<div className="empty"><div className="empty-icon">✅</div><div className="empty-text">Không có sự cố</div></div>:
                 problems.map(p=>(

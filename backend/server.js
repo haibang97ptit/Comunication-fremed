@@ -122,14 +122,14 @@ app.get('/api/kpi-calendar/:type', async (req, res) => {
 app.put('/api/kpi-calendar/:type', async (req, res) => {
   try {
     const { type } = req.params;
-    const { day, shift, passed, month, year, updated_by } = req.body;
+    const { day, shift, passed, month, year, updated_by, reason } = req.body;
     const now = new Date();
     const m = month || now.getMonth()+1;
     const y = year || now.getFullYear();
     const r = await pool.query(
-      `INSERT INTO kpi_calendar(kpi_type,month,year,day,shift,passed,updated_by,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,NOW())
-       ON CONFLICT(kpi_type,year,month,day,shift) DO UPDATE SET passed=$6,updated_by=$7,updated_at=NOW() RETURNING *`,
-      [type, m, y, day, shift, passed, updated_by]);
+      `INSERT INTO kpi_calendar(kpi_type,month,year,day,shift,passed,reason,updated_by,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+       ON CONFLICT(kpi_type,year,month,day,shift) DO UPDATE SET passed=$6,reason=$7,updated_by=$8,updated_at=NOW() RETURNING *`,
+      [type, m, y, day, shift, passed, reason||null, updated_by]);
     io.emit('kpi-calendar-updated', { ...r.rows[0], kpi_type: type });
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -268,10 +268,10 @@ app.post('/api/coa', async (req, res) => {
 });
 app.put('/api/coa/:id', async (req, res) => {
   try {
-    const { product, batch_number, stage, submit_coa, approve_coa } = req.body;
+    const { product, batch_number, stage, submit_coa, approve_coa, updated_by } = req.body;
     const r = await pool.query(
-      'UPDATE release_coa SET product=COALESCE($1,product),batch_number=COALESCE($2,batch_number),stage=COALESCE($3,stage),submit_coa=COALESCE($4,submit_coa),approve_coa=COALESCE($5,approve_coa) WHERE id=$6 RETURNING *',
-      [product, batch_number, stage, submit_coa, approve_coa, req.params.id]);
+      'UPDATE release_coa SET product=COALESCE($1,product),batch_number=COALESCE($2,batch_number),stage=COALESCE($3,stage),submit_coa=COALESCE($4,submit_coa),approve_coa=COALESCE($5,approve_coa),updated_by=$6,updated_at=NOW() WHERE id=$7 RETURNING *',
+      [product, batch_number, stage, submit_coa, approve_coa, updated_by, req.params.id]);
     io.emit('coa-updated', r.rows[0]);
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }

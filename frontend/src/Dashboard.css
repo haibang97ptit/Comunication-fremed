@@ -243,6 +243,16 @@ body { font-family: var(--font-main); background: var(--bg-primary); color: var(
 .coa-time { font-size:12px; white-space:nowrap; }
 .coa-table tr.coa-done td { background:rgba(16,185,129,.06); }
 .coa-table tr.coa-done .coa-time { color:var(--accent-green); }
+.coa-updated-time { font-size:11px; color:var(--text-muted); margin-left:4px; }
+
+/* KPI Tooltip */
+.kpi-tooltip { background:#1a1d23; color:white; padding:12px 14px; border-radius:8px; min-width:200px; max-width:280px; box-shadow:0 8px 24px rgba(0,0,0,.25); font-size:13px; animation:tipIn .15s ease-out; }
+@keyframes tipIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+.kpi-tooltip-hdr { display:flex; align-items:center; gap:8px; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid rgba(255,255,255,.12); }
+.kpi-tooltip-badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; color:white; font-weight:900; font-size:12px; }
+.kpi-tooltip-title { font-weight:700; font-size:12px; letter-spacing:.3px; }
+.kpi-tooltip-reason { font-size:13px; line-height:1.5; color:rgba(255,255,255,.95); }
+.kpi-tooltip-meta { font-size:11px; color:rgba(255,255,255,.5); margin-top:6px; font-style:italic; }
 
 /* Empty state */
 .empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--text-muted); gap:3px; }

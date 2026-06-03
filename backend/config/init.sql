@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS kpi_calendar (
     day INTEGER NOT NULL,
     shift INTEGER NOT NULL CHECK (shift IN (1, 2)),
     passed BOOLEAN NOT NULL DEFAULT FALSE,
+    reason TEXT,
     updated_by VARCHAR(100),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(kpi_type, year, month, day, shift)
@@ -109,6 +110,8 @@ CREATE TABLE IF NOT EXISTS release_coa (
     approve_coa VARCHAR(200),
     created_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_by VARCHAR(100),
+    updated_at TIMESTAMP,
     archived BOOLEAN DEFAULT FALSE
 );
 

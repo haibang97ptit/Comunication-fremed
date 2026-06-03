@@ -63,6 +63,7 @@ export default function AdminPage({role}){
   const[probForm,setProbForm]=useState({department:'',description:'',severity:'info'});
   const[apForm,setApForm]=useState({date:'',kpi_topic:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});
   const[coaForm,setCoaForm]=useState({product:'',batch_number:'',stage:'Granulation',submit_coa:'',approve_coa:''});
+  const[editCoaId,setEditCoaId]=useState(null);
 
   // Force scroll
   useEffect(()=>{if(!authed)return;/*no-op*/},[authed]);
@@ -97,21 +98,50 @@ export default function AdminPage({role}){
   const submitProblem=async()=>{if(!probForm.department||!probForm.description)return;const p=await post('/problems',{...probForm,reported_by:role.toUpperCase()});setProblems(prev=>[p,...prev]);setProbForm({department:'',description:'',severity:'info'});show('Đã báo cáo sự cố')};
   const resolveProblem=async(id)=>{await put(`/problems/${id}/resolve`);setProblems(p=>p.filter(x=>x.id!==id));show('Đã xử lý sự cố')};
   const submitKpi=async(type)=>{await put(`/kpi/${type}`,{image_url:kpiForms[type].image_url,updated_by:role.toUpperCase()});show(`Đã cập nhật ${type.toUpperCase()}`)};
-  const toggleKpiCal=async(kpiType,day,shift,currentPassed)=>{
-    const now=new Date();const m=now.getMonth()+1;const y=now.getFullYear();
+  const [reasonModal, setReasonModal] = useState(null); // {kpiType, day, shift, reason}
+  const toggleKpiCal=(kpiType,day,shift,currentPassed)=>{
     let newVal;
     if(currentPassed===undefined||currentPassed===null) newVal=true;
     else if(currentPassed===true) newVal=false;
     else newVal=null;
-    const r=await put(`/kpi-calendar/${kpiType}`,{day,shift,passed:newVal,month:m,year:y,updated_by:role.toUpperCase()});
+    if(newVal===false){
+      // Mark as failed: ask for reason via modal
+      const existing=kpiCal.find(x=>x.kpi_type===kpiType&&x.day===day&&x.shift===shift);
+      setReasonModal({kpiType,day,shift,reason:existing?.reason||''});
+    }else{
+      // Pass or back to null: save directly with no reason
+      saveKpiCal(kpiType,day,shift,newVal,null);
+    }
+  };
+  const saveKpiCal=async(kpiType,day,shift,newVal,reason)=>{
+    const now=new Date();const m=now.getMonth()+1;const y=now.getFullYear();
+    const r=await put(`/kpi-calendar/${kpiType}`,{day,shift,passed:newVal,month:m,year:y,reason,updated_by:role.toUpperCase()});
     setKpiCal(prev=>{
       const exists=prev.find(x=>x.kpi_type===kpiType&&x.day===day&&x.shift===shift);
-      if(exists) return prev.map(x=>x.kpi_type===kpiType&&x.day===day&&x.shift===shift?{...x,passed:newVal}:x);
-      return[...prev,{...r,kpi_type:kpiType,day,shift,month:m,year:y,passed:newVal}];
+      if(exists) return prev.map(x=>x.kpi_type===kpiType&&x.day===day&&x.shift===shift?{...x,passed:newVal,reason}:x);
+      return[...prev,{...r,kpi_type:kpiType,day,shift,month:m,year:y,passed:newVal,reason}];
     });
   };
+  const submitReason=()=>{
+    if(!reasonModal)return;
+    const {kpiType,day,shift,reason}=reasonModal;
+    if(!reason.trim()){alert('Vui lòng nhập lý do không đạt');return;}
+    saveKpiCal(kpiType,day,shift,false,reason.trim());
+    setReasonModal(null);
+  };
   const submitAp=async()=>{if(!apForm.phenomenon)return;const a=await post('/action-plan',{...apForm,created_by:role.toUpperCase()});setActionPlans(p=>[a,...p]);setApForm({date:'',kpi_topic:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});show('Đã thêm Action Plan')};
-  const submitCoa=async()=>{if(!coaForm.product.trim()||!coaForm.batch_number.trim())return;const c=await post('/coa',{...coaForm,created_by:role.toUpperCase()});setCoa(p=>[c,...p]);setCoaForm({product:'',batch_number:'',stage:'Granulation',submit_coa:'',approve_coa:''});show('Đã thêm COA')};
+  const submitCoa=async()=>{
+    if(!coaForm.product.trim()||!coaForm.batch_number.trim())return;
+    if(editCoaId){
+      const c=await put(`/coa/${editCoaId}`,{...coaForm,updated_by:role.toUpperCase()});
+      setCoa(p=>p.map(x=>x.id===editCoaId?c:x));setEditCoaId(null);show('Đã cập nhật COA');
+    }else{
+      const c=await post('/coa',{...coaForm,created_by:role.toUpperCase()});setCoa(p=>[c,...p]);show('Đã thêm COA');
+    }
+    setCoaForm({product:'',batch_number:'',stage:'Granulation',submit_coa:'',approve_coa:''});
+  };
+  const startEditCoa=(c)=>{setEditCoaId(c.id);setCoaForm({product:c.product,batch_number:c.batch_number,stage:c.stage||'Granulation',submit_coa:c.submit_coa||'',approve_coa:c.approve_coa||''})};
+  const cancelEditCoa=()=>{setEditCoaId(null);setCoaForm({product:'',batch_number:'',stage:'Granulation',submit_coa:'',approve_coa:''});};
   const submitPlan=async()=>{const t=new Date(),ws=new Date(t);ws.setDate(t.getDate()-t.getDay()+1);const we=new Date(ws);we.setDate(ws.getDate()+6);
     await put('/production-plan',{week_start:ws.toISOString().split('T')[0],week_end:we.toISOString().split('T')[0],image_url:planForm.image_url,notes:planForm.notes,updated_by:role.toUpperCase()});show('Đã cập nhật kế hoạch SX')};
   const submitShift=async()=>{await put('/shift-schedule',{image_url:shiftForm.image_url,notes:shiftForm.notes,updated_by:role.toUpperCase()});show('Đã cập nhật phân ca')};
@@ -226,10 +256,14 @@ export default function AdminPage({role}){
             <div className="f-group"><div className="f-label">Approve CoA</div>
               <input className="f-input" placeholder="VD: 10h- 18/05/2026" value={coaForm.approve_coa} onChange={e=>setCoaForm(p=>({...p,approve_coa:e.target.value}))}/></div>
           </div>
-          <div className="f-actions"><button className="btn primary" onClick={submitCoa}>Thêm COA</button></div>
+          <div className="f-actions">
+            <button className="btn primary" onClick={submitCoa}>{editCoaId?'Cập Nhật COA':'Thêm COA'}</button>
+            {editCoaId&&<button className="btn warn" onClick={cancelEditCoa}>Hủy</button>}
+          </div>
           {coa.length>0&&<div className="ex-items"><div className="ex-title">Đang hiển thị ({coa.length})</div>
-            {coa.map(c=><div key={c.id} className="ex-item">
-              <div className="ex-item-content"><strong>{c.product}</strong> — Lô {c.batch_number} — {c.stage} {c.submit_coa&&<span>| Submit: {c.submit_coa}</span>} {c.approve_coa&&<span>| Approve: {c.approve_coa}</span>}</div>
+            {coa.map(c=><div key={c.id} className={`ex-item ${editCoaId===c.id?'ex-item-editing':''}`}>
+              <div className="ex-item-content"><strong>{c.product}</strong> — Lô {c.batch_number} — {c.stage} {c.submit_coa&&<span>| Submit: {c.submit_coa}</span>} {c.approve_coa&&<span>| Approve: {c.approve_coa}</span>}{c.updated_by&&<span style={{color:'var(--text-muted)',fontSize:11}}> (sửa bởi {c.updated_by})</span>}</div>
+              <button className="ex-item-btn resolve" onClick={()=>startEditCoa(c)}>Sửa</button>
               <button className="ex-item-btn archive" onClick={()=>archive('/coa',c.id,coa,setCoa,'COA')}>Lưu trữ</button></div>)}</div>}
         </Sec>
 
@@ -344,6 +378,23 @@ export default function AdminPage({role}){
           <button className="btn danger" onClick={archiveAll}>Kết Thúc Ngày — Lưu Trữ Tất Cả</button>
         </div>
       </div>
+
+      {/* Reason Modal */}
+      {reasonModal&&(
+        <div className="reason-modal-overlay" onClick={()=>setReasonModal(null)}>
+          <div className="reason-modal" onClick={e=>e.stopPropagation()}>
+            <div className="reason-modal-hdr">
+              <div className="reason-modal-title">Lý do không đạt</div>
+              <div className="reason-modal-sub">{reasonModal.kpiType.toUpperCase()} — Ngày {reasonModal.day}, Ca {reasonModal.shift}</div>
+            </div>
+            <textarea className="reason-modal-input" autoFocus placeholder="Nhập lý do không đạt KPI..." value={reasonModal.reason} onChange={e=>setReasonModal({...reasonModal,reason:e.target.value})}/>
+            <div className="reason-modal-actions">
+              <button className="btn warn" onClick={()=>setReasonModal(null)}>Hủy</button>
+              <button className="btn primary" onClick={submitReason}>Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

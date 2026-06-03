@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const COLORS = {
   safety:  { main: '#b91c1c', label: '+', fullName: 'SAFETY' },
@@ -17,9 +18,11 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
   const daysInMonth = new Date(y, m, 0).getDate();
   const today = now.getMonth() + 1 === m && now.getFullYear() === y ? now.getDate() : -1;
 
+  const [tooltip, setTooltip] = useState(null);
+
   const lookup = {};
   data.filter(d => d.kpi_type === type).forEach(d => {
-    lookup[`${d.day}-${d.shift}`] = d.passed;
+    lookup[`${d.day}-${d.shift}`] = { passed: d.passed, reason: d.reason, updated_by: d.updated_by };
   });
 
   const cx = 160, cy = 160, size = 320;
@@ -30,7 +33,6 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
   const cellGap = 1.5;
   const shiftWidth = (rEnd - rStart - cellGap) / 2;
 
-  // Ca 1 = outer ring, Ca 2 = inner ring
   const getRadii = (shift) => {
     if (shift === 2) return [rStart, rStart + shiftWidth];
     return [rStart + shiftWidth + cellGap, rEnd];
@@ -46,6 +48,13 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
     const large = endAngle - startAngle > 180 ? 1 : 0;
     return `M${x1},${y1} A${r2},${r2} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${r1},${r1} 0 ${large} 0 ${x4},${y4} Z`;
   };
+
+  const handleEnter = (e, day, shift, info) => {
+    if (!info || info.passed !== false || !info.reason) return;
+    setTooltip({ x: e.clientX, y: e.clientY, day, shift, reason: info.reason, updated_by: info.updated_by });
+  };
+  const handleMove = (e) => { if (tooltip) setTooltip({ ...tooltip, x: e.clientX, y: e.clientY }); };
+  const handleLeave = () => setTooltip(null);
 
   const cells = [];
   const labels = [];
@@ -79,14 +88,20 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
 
     for (let s = 1; s <= 2; s++) {
       const [r1, r2] = getRadii(s);
-      const val = lookup[`${day}-${s}`];
+      const info = lookup[`${day}-${s}`];
+      const val = info?.passed;
       let fill = 'var(--bg-secondary)';
       if (val === true) fill = '#059669';
       else if (val === false) fill = '#ef4444';
-
+      const isFailed = val === false;
       cells.push(
         <path key={`c-${day}-${s}`} d={makeArc(r1, r2, startA, endA)}
-          fill={fill} stroke="white" strokeWidth={0.5} opacity={isToday ? 1 : 0.85} />
+          fill={fill} stroke="white" strokeWidth={0.5} opacity={isToday ? 1 : 0.85}
+          style={isFailed && info?.reason ? { cursor: 'pointer' } : undefined}
+          onMouseEnter={isFailed ? (e) => handleEnter(e, day, s, info) : undefined}
+          onMouseMove={isFailed ? handleMove : undefined}
+          onMouseLeave={isFailed ? handleLeave : undefined}
+        />
       );
     }
 
@@ -99,35 +114,52 @@ export default function KpiCalendar({ type = 'quality', data = [], month, year }
   }
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', height: '100%' }}>
-      <circle cx={cx} cy={cy} r={rEnd + 5} fill="none" stroke="var(--border-color)" strokeWidth={0.3} />
-      <circle cx={cx} cy={cy} r={rStart - 2} fill="none" stroke="var(--border-color)" strokeWidth={0.3} />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', height: '100%' }}>
+        <circle cx={cx} cy={cy} r={rEnd + 5} fill="none" stroke="var(--border-color)" strokeWidth={0.3} />
+        <circle cx={cx} cy={cy} r={rStart - 2} fill="none" stroke="var(--border-color)" strokeWidth={0.3} />
+        {cells}
+        {labels}
+        <circle cx={cx} cy={cy} r={rInner} fill={cfg.main} opacity={0.9} />
+        <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle" fontSize={28} fontWeight={900} fill="white">{cfg.label}</text>
+        <text x={cx} y={cy + 8} textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={900} fill="rgba(255,255,255,0.9)" letterSpacing="1">{cfg.fullName}</text>
+        <text x={cx} y={cy + 18} textAnchor="middle" dominantBaseline="middle" fontSize={8} fontWeight={900} fill="rgba(255,255,255,0.7)">{MONTH_EN[m]} {y}</text>
+        <g transform={`translate(10, ${size - 14})`}>
+          <rect x={0} y={0} width={8} height={8} rx={1} fill="#059669" />
+          <text x={11} y={7} fontSize={6} fill="var(--text-muted)">Đạt</text>
+          <rect x={30} y={0} width={8} height={8} rx={1} fill="#ef4444" />
+          <text x={41} y={7} fontSize={6} fill="var(--text-muted)">K.Đạt</text>
+        </g>
+        <g transform={`translate(${size - 95}, ${size - 14})`}>
+          <text x={17} y={7} fontSize={6} fill="var(--text-muted)">Ngoài: Ca 1</text>
+          <text x={56} y={7} fontSize={6} fill="var(--text-muted)">Trong: Ca 2</text>
+        </g>
+      </svg>
 
-      {cells}
-      {labels}
-
-      {/* Center circle */}
-      <circle cx={cx} cy={cy} r={rInner} fill={cfg.main} opacity={0.9} />
-      <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle"
-        fontSize={28} fontWeight={900} fill="white">{cfg.label}</text>
-      <text x={cx} y={cy + 8} textAnchor="middle" dominantBaseline="middle"
-        fontSize={10} fontWeight={900} fill="rgba(255,255,255,0.9)" letterSpacing="1">{cfg.fullName}</text>
-      <text x={cx} y={cy + 18} textAnchor="middle" dominantBaseline="middle"
-        fontSize={8} fontWeight={900} fill="rgba(255,255,255,0.7)">{MONTH_EN[m]} {y}</text>
-
-      {/* Legend */}
-      <g transform={`translate(10, ${size - 14})`}>
-        <rect x={0} y={0} width={8} height={8} rx={1} fill="#059669" />
-        <text x={11} y={7} fontSize={6} fill="var(--text-muted)">Đạt</text>
-        <rect x={30} y={0} width={8} height={8} rx={1} fill="#ef4444" />
-        <text x={41} y={7} fontSize={6} fill="var(--text-muted)">K.Đạt</text>
-      </g>
-      <g transform={`translate(${size - 95}, ${size - 14})`}>
-        {/* <rect x={0} y={1} width={14} height={6} rx={1} fill="none" stroke="var(--text-muted)" strokeWidth={0.8} /> */}
-        <text x={17} y={7} fontSize={6} fill="var(--text-muted)">Ngoài: Ca 1</text>
-        {/* <rect x={55} y={2} width={10} height={4} rx={1} fill="none" stroke="var(--text-muted)" strokeWidth={0.8} /> */}
-        <text x={56} y={7} fontSize={6} fill="var(--text-muted)">Trong: Ca 2</text>
-      </g>
-    </svg>
+      {tooltip && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: Math.min(tooltip.x + 14, window.innerWidth - 280),
+          top: Math.max(tooltip.y - 80, 10),
+          zIndex: 99999,
+          pointerEvents: 'none',
+          background: '#1a1d23',
+          color: 'white',
+          padding: '12px 14px',
+          borderRadius: '8px',
+          minWidth: '200px',
+          maxWidth: '280px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          fontSize: '13px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: '50%', background: cfg.main, color: 'white', fontWeight: 900, fontSize: 12 }}>{cfg.label}</span>
+            <span style={{ fontWeight: 700, fontSize: 12, letterSpacing: 0.3 }}>Ngày {tooltip.day} — Ca {tooltip.shift}</span>
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.95)' }}>{tooltip.reason}</div>
+        </div>,
+        document.body
+      )}
+    </div>
   );
 }

@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS action_plan (
     status VARCHAR(50) DEFAULT 'Open',
     created_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_by VARCHAR(100),
+    updated_at TIMESTAMP,
     archived BOOLEAN DEFAULT FALSE
 );
 

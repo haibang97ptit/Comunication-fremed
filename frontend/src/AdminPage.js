@@ -62,6 +62,7 @@ export default function AdminPage({role}){
   const[starForm,setStarForm]=useState({employee_name:'',employee_image:null,content:''});
   const[probForm,setProbForm]=useState({department:'',description:'',severity:'info'});
   const[apForm,setApForm]=useState({date:'',kpi_topic:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});
+  const[editApId,setEditApId]=useState(null);
   const[coaForm,setCoaForm]=useState({product:'',batch_number:'',stage:'Granulation',submit_coa:'',approve_coa:''});
   const[editCoaId,setEditCoaId]=useState(null);
 
@@ -129,7 +130,18 @@ export default function AdminPage({role}){
     saveKpiCal(kpiType,day,shift,false,reason.trim());
     setReasonModal(null);
   };
-  const submitAp=async()=>{if(!apForm.phenomenon)return;const a=await post('/action-plan',{...apForm,created_by:role.toUpperCase()});setActionPlans(p=>[a,...p]);setApForm({date:'',kpi_topic:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});show('Đã thêm Action Plan')};
+  const submitAp=async()=>{
+    if(!apForm.phenomenon)return;
+    if(editApId){
+      const a=await put(`/action-plan/${editApId}`,{...apForm,updated_by:role.toUpperCase()});
+      setActionPlans(p=>p.map(x=>x.id===editApId?a:x));setEditApId(null);show('Đã cập nhật Action Plan');
+    }else{
+      const a=await post('/action-plan',{...apForm,created_by:role.toUpperCase()});setActionPlans(p=>[a,...p]);show('Đã thêm Action Plan');
+    }
+    setApForm({date:'',kpi_topic:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});
+  };
+  const startEditAp=(a)=>{setEditApId(a.id);setApForm({date:a.date?new Date(a.date).toISOString().slice(0,10):'',kpi_topic:a.kpi_topic||'',phenomenon:a.phenomenon||'',rootcause:a.rootcause||'',action:a.action||'',pic:a.pic||'',status:a.status||'Open'})};
+  const cancelEditAp=()=>{setEditApId(null);setApForm({date:'',kpi_topic:'',phenomenon:'',rootcause:'',action:'',pic:'',status:'Open'});};
   const submitCoa=async()=>{
     if(!coaForm.product.trim()||!coaForm.batch_number.trim())return;
     if(editCoaId){
@@ -332,7 +344,7 @@ export default function AdminPage({role}){
           </Sec>
 
           {/* Action Plan */}
-          <Sec bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title="Action Plan">
+          <Sec bg="rgba(59,130,246,.12)" color="var(--accent-blue)" title={editApId?'Sửa Action Plan':'Action Plan'}>
             <div className="f-row" style={{gridTemplateColumns:'1fr 1fr 1fr 1fr'}}>
               <div className="f-group"><div className="f-label">Date</div><input className="f-input" type="date" value={apForm.date} onChange={e=>setApForm(p=>({...p,date:e.target.value}))}/></div>
               <div className="f-group"><div className="f-label">KPI</div>
@@ -347,9 +359,13 @@ export default function AdminPage({role}){
               <div className="f-group"><div className="f-label">PIC</div><input className="f-input" placeholder="Người phụ trách..." value={apForm.pic} onChange={e=>setApForm(p=>({...p,pic:e.target.value}))}/></div>
               <div className="f-group"><div className="f-label">Status</div><select className="f-select" value={apForm.status} onChange={e=>setApForm(p=>({...p,status:e.target.value}))}><option>Open</option><option>In Progress</option><option>Done</option></select></div>
             </div>
-            <div className="f-actions"><button className="btn primary" onClick={submitAp}>Thêm Action</button></div>
+            <div className="f-actions">
+              <button className="btn primary" onClick={submitAp}>{editApId?'Cập Nhật Action':'Thêm Action'}</button>
+              {editApId&&<button className="btn warn" onClick={cancelEditAp}>Hủy</button>}
+            </div>
             {actionPlans.length>0&&<div className="ex-items"><div className="ex-title">Đang hiển thị ({actionPlans.length})</div>
-              {actionPlans.map(a=>{const kc={Safety:'#b91c1c',Quality:'#059669',Delivery:'#2563eb',Cost:'#ca8a04'}[a.kpi_topic];return(<div key={a.id} className="ex-item"><div className="ex-item-content">{a.kpi_topic&&<span style={{color:kc,fontWeight:800}}>{a.kpi_topic} </span>}{a.phenomenon} → {a.action} ({a.status})</div>
+              {actionPlans.map(a=>{const kc={Safety:'#b91c1c',Quality:'#059669',Delivery:'#2563eb',Cost:'#ca8a04'}[a.kpi_topic];return(<div key={a.id} className={`ex-item ${editApId===a.id?'ex-item-editing':''}`}><div className="ex-item-content">{a.kpi_topic&&<span style={{color:kc,fontWeight:800}}>{a.kpi_topic} </span>}{a.phenomenon} → {a.action} ({a.status})</div>
+                <button className="ex-item-btn resolve" onClick={()=>startEditAp(a)}>Sửa</button>
                 <button className="ex-item-btn archive" onClick={()=>archive('/action-plan',a.id,actionPlans,setActionPlans,'action')}>Lưu trữ</button></div>)})}</div>}
           </Sec>
 

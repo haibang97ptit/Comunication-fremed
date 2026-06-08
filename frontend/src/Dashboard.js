@@ -246,7 +246,7 @@ export default function Dashboard() {
               <div className="card-body">
                 {coa.length===0?<div className="empty"><div className="empty-icon">📄</div><div className="empty-text">Chưa có COA</div></div>:(
                 <table className="coa-table">
-                  <thead><tr><th>Product</th><th>Batch</th><th>Stage</th><th>Submit CoA</th><th>Approve CoA</th></tr></thead>
+                  <thead><tr><th>Product</th><th>Batch</th><th>Stage</th><th>Submit CoA</th><th>Approve CoA</th><th>Edited</th></tr></thead>
                   <tbody>{coa.map(c=>(
                     <tr key={c.id} className={c.approve_coa?'coa-done':''}>
                       <td className="coa-product">{c.product}</td>
@@ -254,6 +254,7 @@ export default function Dashboard() {
                       <td>{c.stage}</td>
                       <td className="coa-time">{c.submit_coa||'—'}</td>
                       <td className="coa-time">{c.approve_coa||'—'}</td>
+                      <td>{c.updated_by?<DeptTag by={c.updated_by}/>:'—'}</td>
                     </tr>))}</tbody>
                 </table>)}
               </div>
@@ -314,7 +315,7 @@ export default function Dashboard() {
               <div className="card-body">
                 {actionPlan.length===0?<div className="empty"><div className="empty-icon">📊</div><div className="empty-text">Chưa có action plan</div></div>:(
                 <table className="ap-table-lg">
-                  <thead><tr><th>Date</th><th>KPI</th><th>Phenomenon</th><th>Rootcause</th><th>Action</th><th>PIC</th><th>Status</th></tr></thead>
+                  <thead><tr><th>Date</th><th>KPI</th><th>Phenomenon</th><th>Rootcause</th><th>Action</th><th>PIC</th><th>Status</th><th>Edited</th></tr></thead>
                   <tbody>{actionPlan.map(a=>{
                     const kpiCfg={Safety:{color:'#b91c1c',bg:'rgba(185,28,28,.12)'},Quality:{color:'#059669',bg:'rgba(5,150,105,.12)'},Delivery:{color:'#2563eb',bg:'rgba(37,99,235,.12)'},Cost:{color:'#ca8a04',bg:'rgba(202,138,4,.12)'}};
                     const kc=kpiCfg[a.kpi_topic];
@@ -324,6 +325,7 @@ export default function Dashboard() {
                       <td>{kc?<span className="ap-kpi-tag blink" style={{background:kc.bg,color:kc.color,borderColor:kc.color}}>{a.kpi_topic}</span>:'—'}</td>
                       <td>{a.phenomenon}</td><td>{a.rootcause}</td><td>{a.action}</td><td>{a.pic}</td>
                       <td><span className={`ap-status ${a.status==='Open'?'open':'done'}`}>{a.status}</span></td>
+                      <td>{a.updated_by?<DeptTag by={a.updated_by}/>:'—'}</td>
                     </tr>)})}</tbody>
                 </table>)}
               </div>

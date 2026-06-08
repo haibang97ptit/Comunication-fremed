@@ -156,10 +156,11 @@ app.post('/api/action-plan', async (req, res) => {
 
 app.put('/api/action-plan/:id', async (req, res) => {
   try {
-    const { kpi_topic, phenomenon, rootcause, action, pic, status } = req.body;
+    const { kpi_topic, phenomenon, rootcause, action, pic, status, updated_by } = req.body;
+    const nz = v => (v === '' || v === undefined) ? null : v;
     const r = await pool.query(
-      'UPDATE action_plan SET kpi_topic=COALESCE($1,kpi_topic),phenomenon=COALESCE($2,phenomenon),rootcause=COALESCE($3,rootcause),action=COALESCE($4,action),pic=COALESCE($5,pic),status=COALESCE($6,status) WHERE id=$7 RETURNING *',
-      [kpi_topic, phenomenon, rootcause, action, pic, status, req.params.id]);
+      'UPDATE action_plan SET kpi_topic=COALESCE($1,kpi_topic),phenomenon=COALESCE($2,phenomenon),rootcause=COALESCE($3,rootcause),action=COALESCE($4,action),pic=COALESCE($5,pic),status=COALESCE($6,status),updated_by=$7,updated_at=NOW() WHERE id=$8 RETURNING *',
+      [nz(kpi_topic), nz(phenomenon), nz(rootcause), nz(action), nz(pic), nz(status), updated_by, req.params.id]);
     io.emit('action-plan-updated', r.rows[0]);
     res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
